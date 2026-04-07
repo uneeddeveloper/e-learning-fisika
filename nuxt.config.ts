@@ -13,7 +13,7 @@ export default defineNuxtConfig({
     redirectOptions: {
       login: '/auth/login',
       callback: '/auth/confirm',
-      exclude: ['/', '/courses', '/courses/*'],
+      exclude: ['/', '/frontend', '/frontend/*', '/backend', '/backend/*', '/courses', '/courses/*'],
     },
   },
 
