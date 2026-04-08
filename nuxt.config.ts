@@ -9,6 +9,13 @@ export default defineNuxtConfig({
 
   modules: ['@nuxtjs/supabase', '@nuxtjs/tailwindcss'],
 
+  postcss: {
+    plugins: {
+      tailwindcss: {},
+      autoprefixer: {},
+    },
+  },
+
   css: ['~/assets/css/tailwind.css'],
 
   app: {
