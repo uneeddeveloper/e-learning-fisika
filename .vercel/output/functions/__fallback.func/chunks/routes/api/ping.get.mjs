@@ -1,4 +1,4 @@
-import { d as defineEventHandler } from '../../nitro/nitro.mjs';
+import { d as defineEventHandler } from '../../_/nitro.mjs';
 import 'node:http';
 import 'node:https';
 import 'node:events';

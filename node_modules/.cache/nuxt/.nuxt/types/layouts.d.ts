@@ -6,9 +6,9 @@ type ComponentProps<T> = T extends new(...args: any) => { $props: infer P } ? No
 
 declare module 'nuxt/app' {
   interface NuxtLayouts {
-    default: ComponentProps<typeof import("/home/san/Development/DesaDigital/e-learning-fisika/app/layouts/default.vue").default>
-    student: ComponentProps<typeof import("/home/san/Development/DesaDigital/e-learning-fisika/app/layouts/student.vue").default>
-    teacher: ComponentProps<typeof import("/home/san/Development/DesaDigital/e-learning-fisika/app/layouts/teacher.vue").default>
+    default: ComponentProps<typeof import("D:/e-learning-fisika/app/layouts/default.vue").default>
+    student: ComponentProps<typeof import("D:/e-learning-fisika/app/layouts/student.vue").default>
+    teacher: ComponentProps<typeof import("D:/e-learning-fisika/app/layouts/teacher.vue").default>
   }
   export type LayoutKey = keyof NuxtLayouts extends never ? string : keyof NuxtLayouts
   interface PageMeta {

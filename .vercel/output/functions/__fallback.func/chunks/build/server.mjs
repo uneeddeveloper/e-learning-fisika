@@ -1,5 +1,5 @@
 import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};import { toRef, isRef, hasInjectionContext, getCurrentInstance, defineAsyncComponent, defineComponent, h, inject, computed, unref, shallowRef, provide, shallowReactive, createElementBlock, ref, Suspense, Fragment, useSSRContext, createApp, withCtx, createVNode, openBlock, createBlock, createCommentVNode, onErrorCaptured, onServerPrefetch, resolveDynamicComponent, reactive, effectScope, nextTick, mergeProps, getCurrentScope, isReadonly, isShallow, isReactive, toRaw, customRef } from 'vue';
-import { e as createError$1, p as parseURL, l as encodePath, m as decodePath, n as hasProtocol, o as isScriptProtocol, i as joinURL, w as withQuery, s as sanitizeStatusCode, q as getContext, $ as $fetch, r as defu, t as executeAsync, v as getHeader, x as setCookie, y as setHeader, z as klona, A as parse, B as getRequestHeader, C as isEqual, D as getCookie, E as deleteCookie } from '../nitro/nitro.mjs';
+import { h as createError$1, m as parseURL, n as encodePath, o as decodePath, q as hasProtocol, r as isScriptProtocol, l as joinURL, w as withQuery, s as sanitizeStatusCode, v as getContext, $ as $fetch, x as defu, y as executeAsync, z as getHeader, A as setCookie, B as setHeader, C as klona, D as parse, E as getRequestHeader, F as isEqual, G as getCookie, H as deleteCookie } from '../_/nitro.mjs';
 import { b as baseURL } from '../routes/renderer.mjs';
 import { useRoute as useRoute$1, RouterView, createMemoryHistory, createRouter, START_LOCATION } from 'vue-router';
 import { createServerClient, parseCookieHeader } from '@supabase/ssr';
@@ -620,35 +620,35 @@ const _routes = [
     name: "auth-confirm",
     path: "/auth/confirm",
     meta: __nuxt_page_meta$4 || {},
-    component: () => import('./confirm-_yQBS6CI.mjs')
+    component: () => import('./confirm-qHSUF8D8.mjs')
   },
   {
     name: "auth-login",
     path: "/auth/login",
     meta: __nuxt_page_meta$3 || {},
-    component: () => import('./login-Dloxn9Id.mjs')
+    component: () => import('./login-D1X1PSJc.mjs')
   },
   {
     name: "courses-id",
     path: "/courses/:id()",
     meta: { ...__nuxt_page_meta$2 || {}, ...{ "middleware": "auth" } },
-    component: () => import('./_id_-Cf-g5ZD4.mjs')
+    component: () => import('./_id_-DtED5bfE.mjs')
   },
   {
     name: "backend",
     path: "/backend",
-    component: () => import('./index-D014cvP0.mjs')
+    component: () => import('./index-BLP86Ea3.mjs')
   },
   {
     name: "courses",
     path: "/courses",
     meta: __nuxt_page_meta$1 || {},
-    component: () => import('./index-Cf__n2Aa.mjs')
+    component: () => import('./index-B5o_YTo9.mjs')
   },
   {
     name: "frontend",
     path: "/frontend",
-    component: () => import('./index-Br68pDvS.mjs')
+    component: () => import('./index-sCQdAqCb.mjs')
   },
   {
     name: "teacher",
@@ -659,7 +659,7 @@ const _routes = [
   {
     name: "index",
     path: "/",
-    component: () => import('./index-DwjtKSQL.mjs')
+    component: () => import('./index-X1TRcIsM.mjs')
   }
 ];
 const _wrapInTransition = (props, children) => {
@@ -805,7 +805,7 @@ const globalMiddleware = [
   manifest_45route_45rule
 ];
 const namedMiddleware = {
-  auth: () => import('./auth-ZB_KQTG0.mjs')
+  auth: () => import('./auth-C6vW__rH.mjs')
 };
 const plugin = /* @__PURE__ */ defineNuxtPlugin({
   name: "nuxt:router",
@@ -1361,9 +1361,9 @@ const plugins = [
   auth_redirect_HUzDltIkO2fpUO5JHjqMueRAOThb4ANNc2aslGKOTOY
 ];
 const layouts = {
-  default: defineAsyncComponent(() => import('./default-mTZHHuoQ.mjs').then((m) => m.default || m)),
-  student: defineAsyncComponent(() => import('./student-DA6zOXcn.mjs').then((m) => m.default || m)),
-  teacher: defineAsyncComponent(() => import('./teacher-D1yAOtPu.mjs').then((m) => m.default || m))
+  default: defineAsyncComponent(() => import('./default-pjSfVClV.mjs').then((m) => m.default || m)),
+  student: defineAsyncComponent(() => import('./student-BHUbf1O3.mjs').then((m) => m.default || m)),
+  teacher: defineAsyncComponent(() => import('./teacher-B84x0GyJ.mjs').then((m) => m.default || m))
 };
 const routeRulesMatcher = _routeRulesMatcher;
 const LayoutLoader = defineComponent({
@@ -1685,8 +1685,8 @@ const _sfc_main$1 = {
     const statusText = _error.statusMessage ?? (is404 ? "Page Not Found" : "Internal Server Error");
     const description = _error.message || _error.toString();
     const stack = void 0;
-    const _Error404 = defineAsyncComponent(() => import('./error-404-5Ec2CXim.mjs'));
-    const _Error = defineAsyncComponent(() => import('./error-500-5QPeLujo.mjs'));
+    const _Error404 = defineAsyncComponent(() => import('./error-404-CA5Qkhwj.mjs'));
+    const _Error = defineAsyncComponent(() => import('./error-500-DzOwmksv.mjs'));
     const ErrorTemplate = is404 ? _Error404 : _Error;
     return (_ctx, _push, _parent, _attrs) => {
       _push(ssrRenderComponent(unref(ErrorTemplate), mergeProps({ status: unref(status), statusText: unref(statusText), statusCode: unref(status), statusMessage: unref(statusText), description: unref(description), stack: unref(stack) }, _attrs), null, _parent));
