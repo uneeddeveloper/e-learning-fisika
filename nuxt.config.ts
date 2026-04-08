@@ -5,9 +5,6 @@ export default defineNuxtConfig({
 
   nitro: {
     preset: 'vercel',
-    externals: {
-      inline: ['@prisma/client', '.prisma/client'],
-    },
   },
 
   modules: ['@nuxtjs/supabase', '@nuxtjs/tailwindcss'],
