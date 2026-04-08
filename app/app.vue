@@ -1,9 +1,9 @@
 <template>
-  <div>
+  <NuxtLayout>
     <NuxtRouteAnnouncer />
     <NuxtPage />
     <DevBadge v-if="isDev" />
-  </div>
+  </NuxtLayout>
 </template>
 
 <script setup lang="ts">

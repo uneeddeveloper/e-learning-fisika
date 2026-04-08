@@ -1,26 +1,35 @@
-# Nuxt dev/build outputs
-.output
-.data
-.nuxt
-.nitro
-.cache
-dist
+# Dependencies
+node_modules/
 
-# Node dependencies
-node_modules
+# Nuxt build outputs
+.nuxt/
+.output/
+.data/
+
+# Vercel build output
+.vercel/
 
 # Logs
-logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Misc
-.DS_Store
-.fleet
-.idea
-
-# Local env files
+# Environment files
 .env
 .env.*
 !.env.example
 
-/app/generated/prisma
+# IDE / OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Prisma generated client output
+app/generated/
+
