@@ -118,3 +118,44 @@ enum LessonType {
   READING
   QUIZ
 }
+
+model Lab {
+  id               Int      @id @default(autoincrement())
+  slug             String   @unique
+  title            String
+  description      String
+  category         String
+  level            String
+  duration         String
+  tone             String   @default("blue")
+  iconName         String
+  kind             LabKind  @default(PHET)
+  embedUrl         String?
+  customComponent  String?
+  objectives       String[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  questions LabQuestion[]
+
+  @@map("labs")
+}
+
+model LabQuestion {
+  id        Int      @id @default(autoincrement())
+  labId     Int
+  order     Int
+  prompt    String
+  hint      String?
+  createdAt DateTime @default(now())
+
+  lab Lab @relation(fields: [labId], references: [id], onDelete: Cascade)
+
+  @@unique([labId, order])
+  @@map("lab_questions")
+}
+
+enum LabKind {
+  PHET
+  CUSTOM
+}
