@@ -28,6 +28,14 @@
               Courses
             </NuxtLink>
             <NuxtLink
+              to="/lab"
+              class="inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-sm font-semibold transition-colors"
+              :class="route.path.startsWith('/lab') ? 'bg-white/6 border border-white/10 text-zinc-50' : 'text-zinc-300 hover:bg-white/5'"
+            >
+              <FlaskConical class="h-4 w-4" />
+              Lab
+            </NuxtLink>
+            <NuxtLink
               to="/teacher"
               class="rounded-2xl px-4 py-2 text-sm font-semibold transition-colors"
               :class="route.path.startsWith('/teacher') ? 'bg-white/6 border border-white/10 text-zinc-50' : 'text-zinc-300 hover:bg-white/5'"
@@ -47,7 +55,7 @@
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
-import { Atom } from 'lucide-vue-next'
+import { Atom, FlaskConical } from 'lucide-vue-next'
 
 const route = useRoute()
 </script>
