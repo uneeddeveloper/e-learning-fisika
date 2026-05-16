@@ -1,6 +1,12 @@
 import 'dotenv/config'
+import bcrypt from 'bcryptjs'
 import { PrismaTiDBCloud } from '@tidbcloud/prisma-adapter'
 import { PrismaClient } from '../app/generated/prisma/client.js'
+
+const defaultUsers = [
+  { name: 'Pak Guru Demo', email: 'teacher@demo.com', password: 'teacher123', role: 'TEACHER' as const },
+  { name: 'Siswa Demo',    email: 'student@demo.com', password: 'student123', role: 'STUDENT' as const },
+]
 
 type SeedLab = {
   slug: string
@@ -249,6 +255,17 @@ async function main() {
 
   const adapter = new PrismaTiDBCloud({ url: databaseUrl })
   const prisma = new PrismaClient({ adapter })
+
+  console.log(`Seeding ${defaultUsers.length} user(s)...`)
+  for (const u of defaultUsers) {
+    const hashed = await bcrypt.hash(u.password, 10)
+    await prisma.user.upsert({
+      where: { email: u.email },
+      create: { name: u.name, email: u.email, password: hashed, role: u.role },
+      update: { name: u.name, password: hashed, role: u.role },
+    })
+    console.log(`  ✓ ${u.email} (${u.role}) — password: ${u.password}`)
+  }
 
   console.log(`Seeding ${labs.length} lab(s)...`)
 
