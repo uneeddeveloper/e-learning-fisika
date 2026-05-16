@@ -8,8 +8,8 @@
       </p>
 
       <form class="mt-5 space-y-3" @submit.prevent="onSubmit">
-        <Input v-model="email" type="email" placeholder="Email" />
-        <Input v-model="password" type="password" placeholder="Password" />
+        <Input v-model="email" type="email" placeholder="Email" autocomplete="email" />
+        <Input v-model="password" type="password" placeholder="Password" autocomplete="current-password" />
 
         <p v-if="errorMessage" class="text-xs text-rose-300">{{ errorMessage }}</p>
         <p v-if="successMessage" class="text-xs text-emerald-300">{{ successMessage }}</p>
@@ -22,6 +22,13 @@
             <Button variant="secondary" class="w-full">Home</Button>
           </NuxtLink>
         </div>
+
+        <p class="pt-2 text-center text-xs text-zinc-500">
+          Belum punya akun?
+          <NuxtLink to="/auth/register" class="font-semibold text-accent-blue hover:underline">
+            Daftar di sini
+          </NuxtLink>
+        </p>
       </form>
     </GlassCard>
   </div>
@@ -36,32 +43,37 @@ import Input from '~/components/ui/input/Input.vue'
 
 definePageMeta({ layout: 'student' })
 
-const client = useSupabaseClient()
+const route = useRoute()
+const { fetch: refreshSession } = useUserSession()
+
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
+const redirectAfterLogin = computed(() => {
+  const r = route.query.redirect
+  return typeof r === 'string' && r.startsWith('/') ? r : '/courses'
+})
+
 async function onSubmit() {
   errorMessage.value = ''
   successMessage.value = ''
   loading.value = true
 
-  const { error } = await client.auth.signInWithPassword({
-    email: email.value,
-    password: password.value,
-  })
-
-  loading.value = false
-
-  if (error) {
-    errorMessage.value = error.message
-    return
+  try {
+    await $fetch('/api/auth/login', {
+      method: 'POST',
+      body: { email: email.value, password: password.value },
+    })
+    await refreshSession()
+    successMessage.value = 'Signed in. Redirecting...'
+    await navigateTo(redirectAfterLogin.value)
+  } catch (err: any) {
+    errorMessage.value = err?.data?.statusMessage ?? err?.statusMessage ?? 'Login gagal. Coba lagi.'
+  } finally {
+    loading.value = false
   }
-
-  successMessage.value = 'Signed in. Redirecting...'
-  await navigateTo(redirectAfterLogin.value)
 }
 </script>
-

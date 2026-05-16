@@ -1,11 +1,10 @@
 export default defineNuxtRouteMiddleware((to) => {
-  const user = useSupabaseUser()
+  const { loggedIn } = useUserSession()
 
-  if (!user.value) {
+  if (!loggedIn.value) {
     return navigateTo({
       path: '/auth/login',
       query: { redirect: to.fullPath },
     })
   }
 })
-
