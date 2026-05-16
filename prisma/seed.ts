@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaTiDBCloud } from '@tidbcloud/prisma-adapter'
 import { PrismaClient } from '../app/generated/prisma/client.js'
 
 type SeedLab = {
@@ -242,12 +242,12 @@ const labs: SeedLab[] = [
 ]
 
 async function main() {
-  const databaseUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL
+  const databaseUrl = process.env.DATABASE_URL
   if (!databaseUrl) {
-    throw new Error('DATABASE_URL / DIRECT_URL tidak ditemukan di .env')
+    throw new Error('DATABASE_URL tidak ditemukan di .env')
   }
 
-  const adapter = new PrismaPg({ connectionString: databaseUrl })
+  const adapter = new PrismaTiDBCloud({ url: databaseUrl })
   const prisma = new PrismaClient({ adapter })
 
   console.log(`Seeding ${labs.length} lab(s)...`)

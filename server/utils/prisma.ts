@@ -1,5 +1,5 @@
 import { PrismaClient } from '~/app/generated/prisma'
-import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaTiDBCloud } from '@tidbcloud/prisma-adapter'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -11,7 +11,7 @@ function createPrismaClient() {
     throw new Error('DATABASE_URL environment variable is not set')
   }
 
-  const adapter = new PrismaPg({ connectionString: databaseUrl })
+  const adapter = new PrismaTiDBCloud({ url: databaseUrl })
   return new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],

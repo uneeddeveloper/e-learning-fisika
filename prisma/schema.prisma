@@ -7,7 +7,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
 model User {
@@ -28,7 +30,7 @@ model User {
 model Course {
   id          Int      @id @default(autoincrement())
   title       String
-  description String?
+  description String?  @db.Text
   thumbnail   String?
   isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -44,16 +46,17 @@ model Lesson {
   id        Int        @id @default(autoincrement())
   courseId  Int
   title     String
-  content   String?
+  content   String?    @db.Text
   videoUrl  String?
   order     Int
   type      LessonType @default(VIDEO)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  course Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   quizzes Quiz[]
 
+  @@index([courseId])
   @@map("lessons")
 }
 
@@ -68,42 +71,47 @@ model Enrollment {
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
+  @@index([courseId])
   @@map("enrollments")
 }
 
 model Quiz {
   id       Int    @id @default(autoincrement())
   lessonId Int
-  question String
+  question String @db.Text
 
-  lesson   Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  options  Option[]
-  results  QuizResult[]
+  lesson  Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  options Option[]
+  results QuizResult[]
 
+  @@index([lessonId])
   @@map("quizzes")
 }
 
 model Option {
   id        Int     @id @default(autoincrement())
   quizId    Int
-  text      String
+  text      String  @db.Text
   isCorrect Boolean @default(false)
 
   quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
+  @@index([quizId])
   @@map("options")
 }
 
 model QuizResult {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  quizId    Int
-  isCorrect Boolean
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  quizId     Int
+  isCorrect  Boolean
   answeredAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([quizId])
   @@map("quiz_results")
 }
 
@@ -120,21 +128,21 @@ enum LessonType {
 }
 
 model Lab {
-  id               Int      @id @default(autoincrement())
-  slug             String   @unique
-  title            String
-  description      String
-  category         String
-  level            String
-  duration         String
-  tone             String   @default("blue")
-  iconName         String
-  kind             LabKind  @default(PHET)
-  embedUrl         String?
-  customComponent  String?
-  objectives       String[]
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  slug            String   @unique
+  title           String
+  description     String   @db.Text
+  category        String
+  level           String
+  duration        String
+  tone            String   @default("blue")
+  iconName        String
+  kind            LabKind  @default(PHET)
+  embedUrl        String?  @db.Text
+  customComponent String?
+  objectives      Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   questions LabQuestion[]
 
@@ -145,8 +153,8 @@ model LabQuestion {
   id        Int      @id @default(autoincrement())
   labId     Int
   order     Int
-  prompt    String
-  hint      String?
+  prompt    String   @db.Text
+  hint      String?  @db.Text
   createdAt DateTime @default(now())
 
   lab Lab @relation(fields: [labId], references: [id], onDelete: Cascade)
