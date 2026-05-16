@@ -1,4 +1,4 @@
-import { PrismaClient } from '~/app/generated/prisma'
+import { PrismaClient } from '../../app/generated/prisma/client'
 import { PrismaTiDBCloud } from '@tidbcloud/prisma-adapter'
 
 const globalForPrisma = globalThis as unknown as {
