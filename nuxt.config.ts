@@ -1,10 +1,4 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import { copyFile, mkdir } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
-
-const PRISMA_ENGINE_FILE = 'libquery_engine-rhel-openssl-3.0.x.so.node'
-const PRISMA_GENERATED_DIR = 'app/generated/prisma'
-
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -37,20 +31,4 @@ export default defineNuxtConfig({
     databaseUrl: process.env.DATABASE_URL,
   },
 
-  nitro: {
-    hooks: {
-      compiled: async (nitro) => {
-        const src = resolve(PRISMA_GENERATED_DIR, PRISMA_ENGINE_FILE)
-        const targets = [
-          join(nitro.options.output.serverDir, PRISMA_GENERATED_DIR, PRISMA_ENGINE_FILE),
-          join(nitro.options.output.serverDir, PRISMA_ENGINE_FILE),
-        ]
-        for (const dest of targets) {
-          await mkdir(dirname(dest), { recursive: true })
-          await copyFile(src, dest)
-          console.log(`[prisma-engine] copied -> ${dest}`)
-        }
-      },
-    },
-  },
 })
