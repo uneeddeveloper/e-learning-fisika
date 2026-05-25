@@ -314,6 +314,20 @@ async function main() {
     console.log(`  ✓ ${lab.slug} (${lab.questions.length} soal)`)
   }
 
+  const existingCourses = await prisma.course.count()
+  if (existingCourses === 0) {
+    const courses = [
+      { title: 'Mekanika: Newton & Gaya', description: 'Konsep gaya, percepatan, gesekan, dan problem solving.', isPublished: true },
+      { title: 'Gelombang: Interferensi & Resonansi', description: 'Visualisasi gelombang, fase, superposisi, dan latihan intuitif.', isPublished: true },
+      { title: 'Atom & Struktur Materi', description: 'Model atom, spektrum, dan jembatan menuju fisika modern.', isPublished: true },
+      { title: 'Gerak Melingkar & Orbit', description: 'Percepatan sentripetal, gravitasi, dan orbit.', isPublished: false },
+    ]
+    await prisma.course.createMany({ data: courses })
+    console.log(`  ✓ ${courses.length} course(s) dibuat`)
+  } else {
+    console.log(`  ✓ ${existingCourses} course(s) sudah ada, dilewati`)
+  }
+
   console.log('Seed selesai.')
   await prisma.$disconnect()
 }
