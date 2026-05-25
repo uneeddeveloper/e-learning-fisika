@@ -30,4 +30,12 @@ export default defineNuxtConfig({
   runtimeConfig: {
     databaseUrl: process.env.DATABASE_URL,
   },
+
+  nitro: {
+    externals: {
+      traceInclude: [
+        'app/generated/prisma/libquery_engine-rhel-openssl-3.0.x.so.node',
+      ],
+    },
+  },
 })
