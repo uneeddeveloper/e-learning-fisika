@@ -341,15 +341,6 @@ definePageMeta({
   middleware: 'auth',
 })
 
-type CourseListItem = {
-  id: number
-  title: string
-  description: string | null
-  isPublished: boolean
-  lessonCount: number
-  enrollmentCount: number
-}
-
 type LessonItem = {
   id: number
   title: string
@@ -360,13 +351,8 @@ type LessonItem = {
   createdAt: string
 }
 
-const { data: courses, refresh: refreshCourses } =
-  await useFetch<CourseListItem[]>('/api/courses', { default: () => [] })
-
 const { data: lessons, pending: lessonsPending, refresh: refreshLessons } =
   await useFetch<LessonItem[]>('/api/lessons', { default: () => [] })
-
-const defaultCourseId = computed(() => courses.value?.[0]?.id ?? null)
 
 function lessonIcon(type: LessonItem['type']) {
   if (type === 'VIDEO') return Video
@@ -435,10 +421,6 @@ function closeDialog() {
 
 async function submitLesson() {
   uploadError.value = null
-  if (!defaultCourseId.value) {
-    uploadError.value = 'Course belum ada. Jalankan npm run db:seed dulu.'
-    return
-  }
   if (!uploadTitle.value.trim()) {
     uploadError.value = 'Judul wajib diisi.'
     return
@@ -446,7 +428,7 @@ async function submitLesson() {
 
   uploadSubmitting.value = true
   try {
-    await $fetch(`/api/courses/${defaultCourseId.value}/lessons`, {
+    await $fetch('/api/lessons', {
       method: 'POST',
       body: {
         title: uploadTitle.value.trim(),
@@ -455,7 +437,7 @@ async function submitLesson() {
         videoUrl: uploadVideoUrl.value || undefined,
       },
     })
-    await Promise.all([refreshLessons(), refreshCourses()])
+    await refreshLessons()
     closeDialog()
   } catch (err: any) {
     uploadError.value = err?.statusMessage ?? err?.data?.statusMessage ?? 'Gagal menyimpan lesson.'
