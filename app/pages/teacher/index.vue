@@ -100,13 +100,13 @@
           </div>
 
           <div class="mt-5 space-y-2">
-            <p v-if="coursesPending" class="text-sm text-zinc-500">Memuat...</p>
-            <p v-else-if="!courses || courses.length === 0" class="text-sm text-zinc-500">
-              Belum ada course. Seed database dulu (npm run db:seed).
+            <p v-if="lessonsPending" class="text-sm text-zinc-500">Memuat...</p>
+            <p v-else-if="!lessons || lessons.length === 0" class="text-sm text-zinc-500">
+              Belum ada materi. Klik Upload untuk tambah.
             </p>
             <button
-              v-for="c in courses"
-              :key="c.id"
+              v-for="l in lessons"
+              :key="l.id"
               class="group/material w-full rounded-2xl border border-white/10 bg-white/3 px-4 py-3 text-left transition-all duration-200 hover:bg-white/5 hover:border-accent-blue/35"
               type="button"
             >
@@ -114,19 +114,19 @@
                 <div class="flex min-w-0 items-center gap-3">
                   <div class="relative grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-white/5">
                     <div class="pointer-events-none absolute inset-0 rounded-2xl bg-accent-blue/20 opacity-70 blur-xl" />
-                    <Layers class="relative h-5 w-5 text-zinc-50" />
+                    <component :is="lessonIcon(l.type)" class="relative h-5 w-5 text-zinc-50" />
                   </div>
                   <div class="min-w-0">
-                    <p class="truncate text-sm font-bold text-zinc-50">{{ c.title }}</p>
+                    <p class="truncate text-sm font-bold text-zinc-50">{{ l.title }}</p>
                     <p class="mt-0.5 text-xs text-zinc-500">
-                      {{ c.lessonCount }} lesson · {{ c.enrollmentCount }} siswa
+                      {{ lessonMeta(l) }}
                     </p>
                   </div>
                 </div>
 
                 <div class="flex items-center gap-3">
                   <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-300">
-                    {{ c.isPublished ? 'Published' : 'Draft' }}
+                    {{ l.type }}
                   </span>
                   <ChevronRight class="h-4 w-4 text-zinc-600 transition-transform duration-200 group-hover/material:translate-x-0.5" />
                 </div>
@@ -214,7 +214,7 @@
             Upload New Material
           </h3>
           <p class="mt-2 text-sm text-zinc-500">
-            Pilih course, tipe lesson, lalu isi judul dan konten.
+            Pilih tipe lesson, lalu isi judul dan konten.
           </p>
         </div>
         <button
@@ -227,20 +227,6 @@
       </div>
 
       <div class="mt-5 space-y-4">
-        <div>
-          <label class="text-xs font-semibold text-zinc-300">Course</label>
-          <div class="relative mt-1.5">
-            <select
-              v-model="uploadCourseId"
-              class="h-12 w-full appearance-none rounded-2xl border border-white/10 bg-white/5 pl-4 pr-10 text-sm text-zinc-100 outline-none transition-all duration-200 focus:border-accent-blue/50 focus:ring-2 focus:ring-accent-blue/20"
-            >
-              <option :value="null" disabled>Pilih course...</option>
-              <option v-for="c in courses ?? []" :key="c.id" :value="c.id">{{ c.title }}</option>
-            </select>
-            <ChevronDown class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-          </div>
-        </div>
-
         <div>
           <label class="text-xs font-semibold text-zinc-300">Type</label>
           <div class="mt-1.5 grid grid-cols-3 gap-2">
@@ -329,7 +315,6 @@ import { computed, defineComponent, h, ref } from 'vue'
 import {
   ArrowUpRight,
   Bell,
-  ChevronDown,
   ChevronRight,
   ClipboardCheck,
   FileText,
@@ -365,8 +350,37 @@ type CourseListItem = {
   enrollmentCount: number
 }
 
-const { data: courses, pending: coursesPending, refresh: refreshCourses } =
+type LessonItem = {
+  id: number
+  title: string
+  type: 'VIDEO' | 'READING' | 'QUIZ'
+  videoUrl: string | null
+  content: string | null
+  order: number
+  createdAt: string
+}
+
+const { data: courses, refresh: refreshCourses } =
   await useFetch<CourseListItem[]>('/api/courses', { default: () => [] })
+
+const { data: lessons, pending: lessonsPending, refresh: refreshLessons } =
+  await useFetch<LessonItem[]>('/api/lessons', { default: () => [] })
+
+const defaultCourseId = computed(() => courses.value?.[0]?.id ?? null)
+
+function lessonIcon(type: LessonItem['type']) {
+  if (type === 'VIDEO') return Video
+  if (type === 'QUIZ') return CheckCircle2
+  return FileText
+}
+
+function lessonMeta(l: LessonItem) {
+  const date = new Date(l.createdAt)
+  const formatted = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+  if (l.type === 'VIDEO') return `Video · ${formatted}`
+  if (l.type === 'QUIZ') return `Quiz · ${formatted}`
+  return `Reading · ${formatted}`
+}
 
 type LessonType = 'VIDEO' | 'READING' | 'QUIZ'
 
@@ -377,7 +391,6 @@ const typeOptions: { value: LessonType; label: string; icon: any }[] = [
 ]
 
 const isUploadOpen = ref(false)
-const uploadCourseId = ref<number | null>(null)
 const uploadType = ref<LessonType>('READING')
 const uploadTitle = ref('')
 const uploadContent = ref('')
@@ -408,7 +421,6 @@ const videoPreview = computed<{ kind: 'youtube'; id: string } | { kind: 'thumbna
 })
 
 function resetUploadForm() {
-  uploadCourseId.value = null
   uploadType.value = 'READING'
   uploadTitle.value = ''
   uploadContent.value = ''
@@ -423,8 +435,8 @@ function closeDialog() {
 
 async function submitLesson() {
   uploadError.value = null
-  if (!uploadCourseId.value) {
-    uploadError.value = 'Pilih course dulu.'
+  if (!defaultCourseId.value) {
+    uploadError.value = 'Course belum ada. Jalankan npm run db:seed dulu.'
     return
   }
   if (!uploadTitle.value.trim()) {
@@ -434,7 +446,7 @@ async function submitLesson() {
 
   uploadSubmitting.value = true
   try {
-    await $fetch(`/api/courses/${uploadCourseId.value}/lessons`, {
+    await $fetch(`/api/courses/${defaultCourseId.value}/lessons`, {
       method: 'POST',
       body: {
         title: uploadTitle.value.trim(),
@@ -443,7 +455,7 @@ async function submitLesson() {
         videoUrl: uploadVideoUrl.value || undefined,
       },
     })
-    await refreshCourses()
+    await Promise.all([refreshLessons(), refreshCourses()])
     closeDialog()
   } catch (err: any) {
     uploadError.value = err?.statusMessage ?? err?.data?.statusMessage ?? 'Gagal menyimpan lesson.'
