@@ -226,100 +226,99 @@
         </button>
       </div>
 
-      <div class="mt-5 grid gap-3">
-        <div class="rounded-3xl border border-white/10 bg-white/5 p-4">
-          <p class="text-xs font-semibold text-zinc-300">Course</p>
-          <select
-            v-model="uploadCourseId"
-            class="mt-3 w-full rounded-2xl border border-white/10 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-100 focus:border-accent-blue focus:outline-none"
-          >
-            <option :value="null" disabled>Pilih course...</option>
-            <option v-for="c in courses ?? []" :key="c.id" :value="c.id">{{ c.title }}</option>
-          </select>
-        </div>
-
-        <div class="rounded-3xl border border-white/10 bg-white/5 p-4">
-          <p class="text-xs font-semibold text-zinc-300">Type</p>
-          <div class="mt-3 grid grid-cols-3 gap-2">
-            <Button size="sm" class="w-full" :class="uploadType === 'VIDEO' ? '' : 'opacity-80'" @click="uploadType = 'VIDEO'">
-              <Video class="h-4 w-4" />
-              Video
-            </Button>
-            <Button variant="secondary" size="sm" class="w-full" :class="uploadType === 'READING' ? '' : 'opacity-80'" @click="uploadType = 'READING'">
-              <FileText class="h-4 w-4" />
-              Reading
-            </Button>
-            <Button variant="ghost" size="sm" class="w-full" :class="uploadType === 'QUIZ' ? '' : 'opacity-80'" @click="uploadType = 'QUIZ'">
-              <CheckCircle2 class="h-4 w-4" />
-              Quiz
-            </Button>
+      <div class="mt-5 space-y-4">
+        <div>
+          <label class="text-xs font-semibold text-zinc-300">Course</label>
+          <div class="relative mt-1.5">
+            <select
+              v-model="uploadCourseId"
+              class="h-12 w-full appearance-none rounded-2xl border border-white/10 bg-white/5 pl-4 pr-10 text-sm text-zinc-100 outline-none transition-all duration-200 focus:border-accent-blue/50 focus:ring-2 focus:ring-accent-blue/20"
+            >
+              <option :value="null" disabled>Pilih course...</option>
+              <option v-for="c in courses ?? []" :key="c.id" :value="c.id">{{ c.title }}</option>
+            </select>
+            <ChevronDown class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
           </div>
         </div>
 
-        <div class="rounded-3xl border border-white/10 bg-white/5 p-4">
-          <p class="text-xs font-semibold text-zinc-300">Title</p>
-          <div class="mt-3">
+        <div>
+          <label class="text-xs font-semibold text-zinc-300">Type</label>
+          <div class="mt-1.5 grid grid-cols-3 gap-2">
+            <button
+              v-for="opt in typeOptions"
+              :key="opt.value"
+              type="button"
+              class="flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-all"
+              :class="uploadType === opt.value
+                ? 'border-accent-blue/60 bg-accent-blue/15 text-zinc-50'
+                : 'border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200'"
+              @click="uploadType = opt.value"
+            >
+              <component :is="opt.icon" class="h-4 w-4" />
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-zinc-300">Title</label>
+          <div class="mt-1.5">
             <Input v-model="uploadTitle" placeholder="Contoh: Hukum Newton II — latihan konsep" />
           </div>
         </div>
 
-        <div v-if="uploadType === 'READING'" class="rounded-3xl border border-white/10 bg-white/5 p-4">
-          <p class="text-xs font-semibold text-zinc-300">Content</p>
+        <div v-if="uploadType === 'READING'">
+          <label class="text-xs font-semibold text-zinc-300">Content</label>
           <textarea
             v-model="uploadContent"
-            rows="5"
+            rows="4"
             placeholder="Tulis materi singkat di sini..."
-            class="mt-3 w-full resize-none rounded-2xl border border-white/10 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-100 focus:border-accent-blue focus:outline-none"
+            class="mt-1.5 w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none transition-all duration-200 focus:border-accent-blue/50 focus:ring-2 focus:ring-accent-blue/20"
           />
         </div>
 
-        <div v-if="uploadType === 'VIDEO'" class="rounded-3xl border border-white/10 bg-white/5 p-4">
-          <p class="text-xs font-semibold text-zinc-300">Video URL</p>
-          <div class="mt-3">
-            <Input v-model="uploadVideoUrl" placeholder="https://www.youtube.com/watch?v=..." />
-          </div>
-          <p class="mt-2 text-xs text-zinc-500">YouTube URL supported. Format: watch, youtu.be, embed, shorts.</p>
+        <div v-if="uploadType === 'VIDEO'" class="space-y-2">
+          <label class="text-xs font-semibold text-zinc-300">Video URL</label>
+          <Input v-model="uploadVideoUrl" placeholder="https://www.youtube.com/watch?v=..." />
+          <p class="text-[11px] text-zinc-500">YouTube: watch, youtu.be, embed, shorts.</p>
 
-          <div v-if="videoPreview" class="mt-4">
-            <p class="text-xs font-semibold text-zinc-300">Preview</p>
-            <div class="mt-2 overflow-hidden rounded-2xl border border-white/10 bg-black/40">
-              <iframe
-                v-if="videoPreview.kind === 'youtube'"
-                :src="`https://www.youtube.com/embed/${videoPreview.id}`"
-                class="aspect-video w-full"
-                frameborder="0"
-                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              />
-              <img
-                v-else-if="videoPreview.kind === 'thumbnail'"
-                :src="videoPreview.url"
-                alt="Video thumbnail"
-                class="aspect-video w-full object-cover"
-              />
-            </div>
+          <div v-if="videoPreview" class="overflow-hidden rounded-xl border border-white/10 bg-black/40">
+            <iframe
+              v-if="videoPreview.kind === 'youtube'"
+              :src="`https://www.youtube.com/embed/${videoPreview.id}`"
+              class="aspect-video w-full"
+              frameborder="0"
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            />
+            <img
+              v-else-if="videoPreview.kind === 'thumbnail'"
+              :src="videoPreview.url"
+              alt="Video thumbnail"
+              class="aspect-video w-full object-cover"
+            />
           </div>
-          <div
+          <p
             v-else-if="uploadVideoUrl"
-            class="mt-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
+            class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-200"
           >
             URL belum bisa di-preview. Pastikan URL YouTube valid.
-          </div>
+          </p>
         </div>
 
-        <p v-if="uploadError" class="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+        <p v-if="uploadError" class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-xs text-rose-300">
           {{ uploadError }}
         </p>
+      </div>
 
-        <div class="flex items-center justify-end gap-2">
-          <Button variant="ghost" size="md" @click="closeDialog">
-            Cancel
-          </Button>
-          <Button size="md" :disabled="uploadSubmitting" @click="submitLesson">
-            <Upload class="h-4 w-4" />
-            {{ uploadSubmitting ? 'Menyimpan...' : 'Create lesson' }}
-          </Button>
-        </div>
+      <div class="sticky bottom-0 -mx-6 -mb-6 mt-5 flex items-center justify-end gap-2 border-t border-white/10 bg-zinc-950/80 px-6 py-4 backdrop-blur">
+        <Button variant="ghost" size="md" @click="closeDialog">
+          Cancel
+        </Button>
+        <Button size="md" :disabled="uploadSubmitting" @click="submitLesson">
+          <Upload class="h-4 w-4" />
+          {{ uploadSubmitting ? 'Menyimpan...' : 'Create lesson' }}
+        </Button>
       </div>
     </Dialog>
   </div>
@@ -330,6 +329,7 @@ import { computed, defineComponent, h, ref } from 'vue'
 import {
   ArrowUpRight,
   Bell,
+  ChevronDown,
   ChevronRight,
   ClipboardCheck,
   FileText,
@@ -368,9 +368,17 @@ type CourseListItem = {
 const { data: courses, pending: coursesPending, refresh: refreshCourses } =
   await useFetch<CourseListItem[]>('/api/courses', { default: () => [] })
 
+type LessonType = 'VIDEO' | 'READING' | 'QUIZ'
+
+const typeOptions: { value: LessonType; label: string; icon: any }[] = [
+  { value: 'VIDEO', label: 'Video', icon: Video },
+  { value: 'READING', label: 'Reading', icon: FileText },
+  { value: 'QUIZ', label: 'Quiz', icon: CheckCircle2 },
+]
+
 const isUploadOpen = ref(false)
 const uploadCourseId = ref<number | null>(null)
-const uploadType = ref<'VIDEO' | 'READING' | 'QUIZ'>('READING')
+const uploadType = ref<LessonType>('READING')
 const uploadTitle = ref('')
 const uploadContent = ref('')
 const uploadVideoUrl = ref('')

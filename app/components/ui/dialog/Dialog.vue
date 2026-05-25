@@ -12,13 +12,13 @@
 
       <div
         ref="panel"
-        class="relative w-full max-w-xl rounded-3xl glass-card border-glow shadow-[0_1px_0_rgba(255,255,255,0.06),0_28px_90px_rgba(0,0,0,0.60)]"
+        class="relative flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl glass-card border-glow shadow-[0_1px_0_rgba(255,255,255,0.06),0_28px_90px_rgba(0,0,0,0.60)]"
         role="dialog"
         aria-modal="true"
         tabindex="-1"
       >
         <div class="pointer-events-none absolute -inset-px rounded-3xl bg-gradient-to-b from-accent-blue/16 via-transparent to-accent-indigo/14 blur-[10px]" />
-        <div class="relative p-6">
+        <div class="relative flex max-h-full flex-col overflow-y-auto p-6">
           <slot />
         </div>
       </div>
