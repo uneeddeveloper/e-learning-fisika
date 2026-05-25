@@ -48,10 +48,24 @@
             </nav>
 
             <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
-              <p class="text-xs font-semibold text-zinc-300">Build note</p>
-              <p class="mt-1 text-xs text-zinc-500">
-                Layout ini sengaja “premium SaaS”: blur halus, grid rapih, dan hover micro-interactions.
-              </p>
+              <div class="flex items-center gap-2.5">
+                <div class="grid h-9 w-9 place-items-center rounded-xl bg-white/10 text-sm font-bold text-zinc-50">
+                  {{ userInitial }}
+                </div>
+                <div class="min-w-0">
+                  <p class="truncate text-xs font-semibold text-zinc-100">{{ user?.name ?? 'Guest' }}</p>
+                  <p class="text-[10px] uppercase tracking-wide text-zinc-500">{{ user?.role ?? '' }}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-zinc-300 transition-colors hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300"
+                :disabled="loggingOut"
+                @click="handleLogout"
+              >
+                <LogOut class="h-3.5 w-3.5" />
+                {{ loggingOut ? 'Keluar...' : 'Logout' }}
+              </button>
             </div>
           </div>
         </aside>
@@ -65,9 +79,28 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { FlaskConical, GraduationCap, LayoutDashboard, LibraryBig } from 'lucide-vue-next'
+import { FlaskConical, GraduationCap, LayoutDashboard, LibraryBig, LogOut } from 'lucide-vue-next'
 
 const route = useRoute()
+const { user, clear } = useUserSession()
+
+const userInitial = computed(() => {
+  const name = (user.value as any)?.name ?? ''
+  return name ? name.charAt(0).toUpperCase() : '?'
+})
+
+const loggingOut = ref(false)
+async function handleLogout() {
+  if (loggingOut.value) return
+  loggingOut.value = true
+  try {
+    await clear()
+    await navigateTo('/auth/login')
+  } finally {
+    loggingOut.value = false
+  }
+}
 </script>
 

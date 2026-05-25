@@ -25,7 +25,7 @@
               class="rounded-2xl px-4 py-2 text-sm font-semibold transition-colors"
               :class="route.path.startsWith('/courses') ? 'bg-white/6 border border-white/10 text-zinc-50' : 'text-zinc-300 hover:bg-white/5'"
             >
-              Courses
+              Materi
             </NuxtLink>
             <NuxtLink
               to="/lab"
@@ -36,12 +36,33 @@
               Lab
             </NuxtLink>
             <NuxtLink
+              v-if="isTeacher"
               to="/teacher"
               class="rounded-2xl px-4 py-2 text-sm font-semibold transition-colors"
               :class="route.path.startsWith('/teacher') ? 'bg-white/6 border border-white/10 text-zinc-50' : 'text-zinc-300 hover:bg-white/5'"
             >
               Teacher
             </NuxtLink>
+
+            <div class="ml-2 hidden items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 sm:flex">
+              <div class="grid h-7 w-7 place-items-center rounded-xl bg-white/10 text-xs font-bold text-zinc-50">
+                {{ userInitial }}
+              </div>
+              <div class="min-w-0">
+                <p class="truncate text-xs font-semibold text-zinc-100">{{ user?.name ?? 'Guest' }}</p>
+                <p class="text-[10px] uppercase tracking-wide text-zinc-500">{{ user?.role ?? '' }}</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-zinc-300 transition-colors hover:bg-rose-500/10 hover:text-rose-300 hover:border-rose-500/30"
+              :disabled="loggingOut"
+              @click="handleLogout"
+            >
+              <LogOut class="h-4 w-4" />
+              <span class="hidden sm:inline">{{ loggingOut ? 'Keluar...' : 'Logout' }}</span>
+            </button>
           </nav>
         </div>
       </div>
@@ -54,9 +75,33 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { Atom, FlaskConical } from 'lucide-vue-next'
+import { Atom, FlaskConical, LogOut } from 'lucide-vue-next'
 
 const route = useRoute()
+const { user, clear } = useUserSession()
+
+const isTeacher = computed(() => {
+  const role = (user.value as any)?.role
+  return role === 'TEACHER' || role === 'ADMIN'
+})
+
+const userInitial = computed(() => {
+  const name = (user.value as any)?.name ?? ''
+  return name ? name.charAt(0).toUpperCase() : '?'
+})
+
+const loggingOut = ref(false)
+async function handleLogout() {
+  if (loggingOut.value) return
+  loggingOut.value = true
+  try {
+    await clear()
+    await navigateTo('/auth/login')
+  } finally {
+    loggingOut.value = false
+  }
+}
 </script>
 
