@@ -6,7 +6,7 @@
       <div class="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.06)_1px,transparent_0)] [background-size:26px_26px] opacity-[0.22]" />
     </div>
 
-    <header class="relative mx-auto max-w-[1200px] px-4 pt-6">
+    <header class="sticky top-0 z-50 mx-auto max-w-[1200px] px-4 pb-2 pt-4">
       <div class="glass-card border-glow rounded-3xl px-4 py-3">
         <div class="flex items-center justify-between gap-4">
           <NuxtLink to="/courses" class="flex items-center gap-3 rounded-2xl px-2 py-1 transition-colors hover:bg-white/5">
@@ -44,7 +44,7 @@
               Teacher
             </NuxtLink>
 
-            <div class="ml-2 hidden items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 sm:flex">
+            <div v-if="loggedIn" class="ml-2 hidden items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-1.5 sm:flex">
               <div class="grid h-7 w-7 place-items-center rounded-xl bg-white/10 text-xs font-bold text-zinc-50">
                 {{ userInitial }}
               </div>
@@ -55,6 +55,7 @@
             </div>
 
             <button
+              v-if="loggedIn"
               type="button"
               class="inline-flex items-center gap-1.5 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-zinc-300 transition-colors hover:bg-rose-500/10 hover:text-rose-300 hover:border-rose-500/30"
               :disabled="loggingOut"
@@ -63,6 +64,14 @@
               <LogOut class="h-4 w-4" />
               <span class="hidden sm:inline">{{ loggingOut ? 'Keluar...' : 'Logout' }}</span>
             </button>
+            <NuxtLink
+              v-else
+              to="/auth/login"
+              class="inline-flex items-center gap-1.5 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-zinc-300 transition-colors hover:bg-accent-blue/15 hover:text-zinc-50 hover:border-accent-blue/35"
+            >
+              <LogIn class="h-4 w-4" />
+              <span class="hidden sm:inline">Login</span>
+            </NuxtLink>
           </nav>
         </div>
       </div>
@@ -77,10 +86,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { Atom, FlaskConical, LogOut } from 'lucide-vue-next'
+import { Atom, FlaskConical, LogIn, LogOut } from 'lucide-vue-next'
 
 const route = useRoute()
-const { user, clear } = useUserSession()
+const { user, loggedIn, clear } = useUserSession()
 
 const isTeacher = computed(() => {
   const role = (user.value as any)?.role

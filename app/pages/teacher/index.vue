@@ -175,143 +175,11 @@
       </div>
     </div>
 
-    <!-- Floating quick action -->
-    <div class="fixed bottom-6 right-6 z-50">
-      <GlassCard class="w-[320px] p-4" :hover="false">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <p class="text-xs font-semibold text-zinc-500">Quick Action</p>
-            <p class="mt-1 text-sm font-extrabold tracking-tight text-zinc-50">
-              Upload New Material
-            </p>
-            <p class="mt-1 text-xs text-zinc-500">
-              Drag & drop nanti bisa ditambah.
-            </p>
-          </div>
-          <div class="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-white/5 shadow-glow-blue">
-            <Upload class="h-5 w-5 text-zinc-50" />
-          </div>
-        </div>
-
-        <div class="mt-4 grid grid-cols-2 gap-2">
-          <Button size="sm" class="w-full" @click="isUploadOpen = true">
-            <Upload class="h-4 w-4" />
-            Upload
-          </Button>
-          <Button variant="secondary" size="sm" class="w-full">
-            <FileText class="h-4 w-4" />
-            Template
-          </Button>
-        </div>
-      </GlassCard>
-    </div>
-
-    <Dialog v-model:open="isUploadOpen">
-      <div class="flex items-start justify-between gap-4">
-        <div class="min-w-0">
-          <p class="text-xs font-semibold tracking-wide text-zinc-500">Upload</p>
-          <h3 class="mt-1 text-lg font-extrabold tracking-tight text-zinc-50">
-            Upload New Material
-          </h3>
-          <p class="mt-2 text-sm text-zinc-500">
-            Pilih tipe lesson, lalu isi judul dan konten.
-          </p>
-        </div>
-        <button
-          type="button"
-          class="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-white/5 text-zinc-300 transition-colors hover:bg-white/6"
-          @click="isUploadOpen = false"
-        >
-          <X class="h-4 w-4" />
-        </button>
-      </div>
-
-      <div class="mt-5 space-y-4">
-        <div>
-          <label class="text-xs font-semibold text-zinc-300">Type</label>
-          <div class="mt-1.5 grid grid-cols-3 gap-2">
-            <button
-              v-for="opt in typeOptions"
-              :key="opt.value"
-              type="button"
-              class="flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-all"
-              :class="uploadType === opt.value
-                ? 'border-accent-blue/60 bg-accent-blue/15 text-zinc-50'
-                : 'border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200'"
-              @click="uploadType = opt.value"
-            >
-              <component :is="opt.icon" class="h-4 w-4" />
-              {{ opt.label }}
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <label class="text-xs font-semibold text-zinc-300">Title</label>
-          <div class="mt-1.5">
-            <Input v-model="uploadTitle" placeholder="Contoh: Hukum Newton II — latihan konsep" />
-          </div>
-        </div>
-
-        <div v-if="uploadType === 'READING'">
-          <label class="text-xs font-semibold text-zinc-300">Content</label>
-          <textarea
-            v-model="uploadContent"
-            rows="4"
-            placeholder="Tulis materi singkat di sini..."
-            class="mt-1.5 w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none transition-all duration-200 focus:border-accent-blue/50 focus:ring-2 focus:ring-accent-blue/20"
-          />
-        </div>
-
-        <div v-if="uploadType === 'VIDEO'" class="space-y-2">
-          <label class="text-xs font-semibold text-zinc-300">Video URL</label>
-          <Input v-model="uploadVideoUrl" placeholder="https://www.youtube.com/watch?v=..." />
-          <p class="text-[11px] text-zinc-500">YouTube: watch, youtu.be, embed, shorts.</p>
-
-          <div v-if="videoPreview" class="overflow-hidden rounded-xl border border-white/10 bg-black/40">
-            <iframe
-              v-if="videoPreview.kind === 'youtube'"
-              :src="`https://www.youtube.com/embed/${videoPreview.id}`"
-              class="aspect-video w-full"
-              frameborder="0"
-              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-            />
-            <img
-              v-else-if="videoPreview.kind === 'thumbnail'"
-              :src="videoPreview.url"
-              alt="Video thumbnail"
-              class="aspect-video w-full object-cover"
-            />
-          </div>
-          <p
-            v-else-if="uploadVideoUrl"
-            class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-200"
-          >
-            URL belum bisa di-preview. Pastikan URL YouTube valid.
-          </p>
-        </div>
-
-        <p v-if="uploadError" class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-xs text-rose-300">
-          {{ uploadError }}
-        </p>
-      </div>
-
-      <div class="sticky bottom-0 -mx-6 -mb-6 mt-5 flex items-center justify-end gap-2 border-t border-white/10 bg-zinc-950/80 px-6 py-4 backdrop-blur">
-        <Button variant="ghost" size="md" @click="closeDialog">
-          Cancel
-        </Button>
-        <Button size="md" :disabled="uploadSubmitting" @click="submitLesson">
-          <Upload class="h-4 w-4" />
-          {{ uploadSubmitting ? 'Menyimpan...' : 'Create lesson' }}
-        </Button>
-      </div>
-    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h, ref } from 'vue'
+import { computed, defineComponent, h } from 'vue'
 import {
   ArrowUpRight,
   Bell,
@@ -320,21 +188,17 @@ import {
   FileText,
   Layers,
   Sparkles,
-  Upload,
   Users,
   Activity as ActivityIcon,
   CheckCircle2,
   MessageSquare,
   Timer,
   Video,
-  X,
 } from 'lucide-vue-next'
 
 import Button from '~/components/ui/button/Button.vue'
 import GlassCard from '~/components/ui/GlassCard.vue'
 import StatCard from '~/components/ui/StatCard.vue'
-import Dialog from '~/components/ui/dialog/Dialog.vue'
-import Input from '~/components/ui/input/Input.vue'
 
 definePageMeta({
   layout: 'teacher',
@@ -351,7 +215,7 @@ type LessonItem = {
   createdAt: string
 }
 
-const { data: lessons, pending: lessonsPending, refresh: refreshLessons } =
+const { data: lessons, pending: lessonsPending } =
   await useFetch<LessonItem[]>('/api/lessons', { default: () => [] })
 
 function lessonIcon(type: LessonItem['type']) {
@@ -366,84 +230,6 @@ function lessonMeta(l: LessonItem) {
   if (l.type === 'VIDEO') return `Video · ${formatted}`
   if (l.type === 'QUIZ') return `Quiz · ${formatted}`
   return `Reading · ${formatted}`
-}
-
-type LessonType = 'VIDEO' | 'READING' | 'QUIZ'
-
-const typeOptions: { value: LessonType; label: string; icon: any }[] = [
-  { value: 'VIDEO', label: 'Video', icon: Video },
-  { value: 'READING', label: 'Reading', icon: FileText },
-  { value: 'QUIZ', label: 'Quiz', icon: CheckCircle2 },
-]
-
-const isUploadOpen = ref(false)
-const uploadType = ref<LessonType>('READING')
-const uploadTitle = ref('')
-const uploadContent = ref('')
-const uploadVideoUrl = ref('')
-const uploadSubmitting = ref(false)
-const uploadError = ref<string | null>(null)
-
-function extractYouTubeId(raw: string): string | null {
-  const url = raw.trim()
-  if (!url) return null
-  const patterns = [
-    /(?:youtube\.com\/watch\?(?:.*&)?v=)([\w-]{11})/,
-    /youtu\.be\/([\w-]{11})/,
-    /youtube\.com\/embed\/([\w-]{11})/,
-    /youtube\.com\/shorts\/([\w-]{11})/,
-  ]
-  for (const p of patterns) {
-    const m = url.match(p)
-    if (m) return m[1]
-  }
-  return null
-}
-
-const videoPreview = computed<{ kind: 'youtube'; id: string } | { kind: 'thumbnail'; url: string } | null>(() => {
-  const ytId = extractYouTubeId(uploadVideoUrl.value)
-  if (ytId) return { kind: 'youtube', id: ytId }
-  return null
-})
-
-function resetUploadForm() {
-  uploadType.value = 'READING'
-  uploadTitle.value = ''
-  uploadContent.value = ''
-  uploadVideoUrl.value = ''
-  uploadError.value = null
-}
-
-function closeDialog() {
-  isUploadOpen.value = false
-  resetUploadForm()
-}
-
-async function submitLesson() {
-  uploadError.value = null
-  if (!uploadTitle.value.trim()) {
-    uploadError.value = 'Judul wajib diisi.'
-    return
-  }
-
-  uploadSubmitting.value = true
-  try {
-    await $fetch('/api/lessons', {
-      method: 'POST',
-      body: {
-        title: uploadTitle.value.trim(),
-        type: uploadType.value,
-        content: uploadContent.value || undefined,
-        videoUrl: uploadVideoUrl.value || undefined,
-      },
-    })
-    await refreshLessons()
-    closeDialog()
-  } catch (err: any) {
-    uploadError.value = err?.statusMessage ?? err?.data?.statusMessage ?? 'Gagal menyimpan lesson.'
-  } finally {
-    uploadSubmitting.value = false
-  }
 }
 
 const stats = computed(() => ({

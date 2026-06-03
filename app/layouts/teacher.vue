@@ -38,6 +38,14 @@
                 Student Gallery
               </NuxtLink>
               <NuxtLink
+                to="/teacher/materi"
+                class="flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-semibold transition-colors"
+                :class="route.path.startsWith('/teacher/materi') ? 'bg-white/6 text-zinc-50 border border-white/10' : 'text-zinc-300 hover:bg-white/5'"
+              >
+                <FolderOpen class="h-4 w-4" />
+                Kelola Materi
+              </NuxtLink>
+              <NuxtLink
                 to="/teacher/latihan"
                 class="flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-semibold transition-colors"
                 :class="route.path.startsWith('/teacher/latihan') ? 'bg-white/6 text-zinc-50 border border-white/10' : 'text-zinc-300 hover:bg-white/5'"
@@ -97,7 +105,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { ClipboardList, FlaskConical, GraduationCap, LayoutDashboard, LibraryBig, LogOut, NotebookPen } from 'lucide-vue-next'
+import { ClipboardList, FlaskConical, FolderOpen, GraduationCap, LayoutDashboard, LibraryBig, LogOut, NotebookPen } from 'lucide-vue-next'
 
 const route = useRoute()
 const { user, clear } = useUserSession()
