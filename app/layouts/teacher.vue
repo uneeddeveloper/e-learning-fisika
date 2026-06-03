@@ -53,6 +53,14 @@
                 <FlaskConical class="h-4 w-4" />
                 Virtual Lab
               </NuxtLink>
+              <NuxtLink
+                to="/teacher/worksheet"
+                class="flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-semibold transition-colors"
+                :class="route.path.startsWith('/teacher/worksheet') ? 'bg-white/6 text-zinc-50 border border-white/10' : 'text-zinc-300 hover:bg-white/5'"
+              >
+                <NotebookPen class="h-4 w-4" />
+                Hasil Worksheet
+              </NuxtLink>
             </nav>
 
             <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
@@ -89,7 +97,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { ClipboardList, FlaskConical, GraduationCap, LayoutDashboard, LibraryBig, LogOut } from 'lucide-vue-next'
+import { ClipboardList, FlaskConical, GraduationCap, LayoutDashboard, LibraryBig, LogOut, NotebookPen } from 'lucide-vue-next'
 
 const route = useRoute()
 const { user, clear } = useUserSession()

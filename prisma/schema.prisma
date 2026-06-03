@@ -23,8 +23,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  enrollments Enrollment[]
-  quizResults QuizResult[]
+  enrollments    Enrollment[]
+  quizResults    QuizResult[]
+  labSubmissions LabSubmission[]
 
   @@map("users")
 }
@@ -171,4 +172,22 @@ model LabQuestion {
 enum LabKind {
   PHET
   CUSTOM
+}
+
+model LabSubmission {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  // Slug lab (mis. "projectile-motion") — cocok dengan id lab di composable useLabs.
+  labSlug     String
+  labTitle    String
+  // Daftar jawaban: [{ questionId, prompt, answer }]
+  answers     Json
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, labSlug])
+  @@index([labSlug])
+  @@map("lab_submissions")
 }

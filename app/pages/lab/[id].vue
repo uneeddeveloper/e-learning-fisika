@@ -40,9 +40,9 @@
           <RotateCcw class="h-4 w-4" />
           Reset jawaban
         </Button>
-        <Button size="md" :disabled="!worksheetComplete" @click="submitWorksheet">
+        <Button size="md" :disabled="!worksheetComplete || saving" @click="submitWorksheet">
           <Send class="h-4 w-4" />
-          {{ submitted ? 'Terkirim' : 'Kirim worksheet' }}
+          {{ saving ? 'Menyimpan...' : submitted ? 'Simpan ulang' : 'Kirim worksheet' }}
         </Button>
       </div>
     </div>
@@ -135,8 +135,11 @@
             </div>
           </div>
 
-          <div v-if="submitted" class="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
-            Worksheet tersimpan secara lokal. Guru akan melihat hasilnya saat backend submission diaktifkan.
+          <div v-if="saveError" class="mt-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+            {{ saveError }}
+          </div>
+          <div v-else-if="submitted" class="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+            Worksheet tersimpan & terkirim ke guru.<span v-if="lastSavedAt" class="text-emerald-300/80"> Terakhir disimpan {{ formatDateTime(lastSavedAt) }}.</span>
           </div>
         </GlassCard>
       </div>
@@ -236,16 +239,36 @@ definePageMeta({
 
 const route = useRoute()
 const { labs } = useLabs()
+const { loggedIn } = useUserSession()
 
 const lab = computed(() => labs.find(l => l.id === String(route.params.id)))
 
 const answers = reactive<Record<string, string>>({})
 const submitted = ref(false)
+const saving = ref(false)
+const saveError = ref<string | null>(null)
+const lastSavedAt = ref<string | null>(null)
 
-watch(lab, (l) => {
+// Muat jawaban tersimpan (kalau ada) + siapkan field worksheet.
+watch(lab, async (l) => {
   if (!l) return
   for (const q of l.worksheet) {
     if (!(q.id in answers)) answers[q.id] = ''
+  }
+  if (!loggedIn.value) return
+  try {
+    const { submission } = await $fetch<{ submission: { answers: { questionId: string; answer: string }[]; updatedAt: string } | null }>(
+      `/api/labs/${l.id}/my-submission`,
+    )
+    if (submission) {
+      for (const a of submission.answers) {
+        if (a.questionId in answers) answers[a.questionId] = a.answer
+      }
+      submitted.value = true
+      lastSavedAt.value = submission.updatedAt
+    }
+  } catch {
+    // Abaikan: belum login atau belum ada submission.
   }
 }, { immediate: true })
 
@@ -263,10 +286,39 @@ function resetWorksheet() {
   if (!lab.value) return
   for (const q of lab.value.worksheet) answers[q.id] = ''
   submitted.value = false
+  saveError.value = null
 }
 
-function submitWorksheet() {
-  if (!worksheetComplete.value) return
-  submitted.value = true
+async function submitWorksheet() {
+  if (!worksheetComplete.value || !lab.value || saving.value) return
+  saveError.value = null
+
+  if (!loggedIn.value) {
+    saveError.value = 'Kamu harus login sebagai siswa untuk mengirim worksheet.'
+    return
+  }
+
+  saving.value = true
+  try {
+    const payload = lab.value.worksheet.map(q => ({
+      questionId: q.id,
+      prompt: q.prompt,
+      answer: (answers[q.id] || '').trim(),
+    }))
+    const res = await $fetch<{ submission: { updatedAt: string } }>(`/api/labs/${lab.value.id}/submit`, {
+      method: 'POST',
+      body: { labTitle: lab.value.title, answers: payload },
+    })
+    submitted.value = true
+    lastSavedAt.value = res.submission.updatedAt
+  } catch (err: any) {
+    saveError.value = err?.statusMessage ?? err?.data?.statusMessage ?? 'Gagal mengirim worksheet.'
+  } finally {
+    saving.value = false
+  }
+}
+
+function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 </script>
