@@ -45,14 +45,36 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Tidak ada soal valid untuk disimpan.' })
   }
 
-  await prisma.$transaction(
-    valid.map((q) =>
-      prisma.quiz.create({
-        data: { lessonId, question: q.question, options: { create: q.options } },
-        select: { id: true },
-      }),
-    ),
-  )
+  // Catatan: TIDAK memakai prisma.$transaction([...]) di sini. Batch transaction
+  // lewat driver TiDB serverless gagal di runtime serverless Vercel (500). Sebagai
+  // gantinya, tiap soal disimpan dengan quiz.create terpisah (operasi yang sama
+  // dengan endpoint tambah-soal satuan yang sudah teruji), dijalankan paralel
+  // ber-batch agar tetap cepat tanpa menahan satu transaksi panjang.
+  const CHUNK = 5
+  let created = 0
+  for (let i = 0; i < valid.length; i += CHUNK) {
+    const chunk = valid.slice(i, i + CHUNK)
+    const results = await Promise.allSettled(
+      chunk.map((q) =>
+        prisma.quiz.create({
+          data: { lessonId, question: q.question, options: { create: q.options } },
+          select: { id: true },
+        }),
+      ),
+    )
+    for (const r of results) {
+      if (r.status === 'fulfilled') {
+        created++
+      } else {
+        skipped++
+        console.error('[quizzes-bulk] gagal menyimpan soal:', r.reason)
+      }
+    }
+  }
 
-  return { created: valid.length, skipped }
+  if (created === 0) {
+    throw createError({ statusCode: 500, statusMessage: 'Gagal menyimpan soal. Coba lagi.' })
+  }
+
+  return { created, skipped }
 })
