@@ -15,19 +15,18 @@ export default defineEventHandler(async (event) => {
   }
 
   // relationMode = "prisma" tidak cascade di DB, jadi hapus relasi manual.
+  // Dijalankan berurutan (bukan prisma.$transaction([...])) karena batch transaction
+  // lewat driver TiDB serverless gagal di runtime serverless Vercel. Urutan anak->induk
+  // mencegah baris yatim bila terputus di tengah.
   const quizzes = await prisma.quiz.findMany({ where: { lessonId: id }, select: { id: true } })
   const quizIds = quizzes.map((q) => q.id)
 
-  await prisma.$transaction([
-    ...(quizIds.length
-      ? [
-          prisma.quizResult.deleteMany({ where: { quizId: { in: quizIds } } }),
-          prisma.option.deleteMany({ where: { quizId: { in: quizIds } } }),
-          prisma.quiz.deleteMany({ where: { lessonId: id } }),
-        ]
-      : []),
-    prisma.lesson.delete({ where: { id } }),
-  ])
+  if (quizIds.length) {
+    await prisma.quizResult.deleteMany({ where: { quizId: { in: quizIds } } })
+    await prisma.option.deleteMany({ where: { quizId: { in: quizIds } } })
+    await prisma.quiz.deleteMany({ where: { lessonId: id } })
+  }
+  await prisma.lesson.delete({ where: { id } })
 
   return { ok: true }
 })

@@ -124,14 +124,28 @@
             <p class="text-sm font-bold text-zinc-50">
               <span class="text-zinc-500">{{ i + 1 }}.</span> {{ q.question }}
             </p>
-            <button
-              type="button"
-              class="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5 text-zinc-400 transition-colors hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300"
-              :disabled="deletingId === q.id"
-              @click="deleteQuiz(q.id)"
-            >
-              <Trash2 class="h-4 w-4" />
-            </button>
+            <div class="flex shrink-0 items-center gap-1.5">
+              <button
+                type="button"
+                class="grid h-8 w-8 place-items-center rounded-xl border bg-white/5 transition-colors"
+                :class="editingQuizId === q.id
+                  ? 'border-accent-blue/50 text-accent-blue'
+                  : 'border-white/10 text-zinc-400 hover:border-accent-blue/30 hover:bg-accent-blue/10 hover:text-zinc-100'"
+                title="Edit soal"
+                @click="startEdit(q)"
+              >
+                <Pencil class="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                class="grid h-8 w-8 place-items-center rounded-xl border border-white/10 bg-white/5 text-zinc-400 transition-colors hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300"
+                :disabled="deletingId === q.id"
+                title="Hapus soal"
+                @click="deleteQuiz(q.id)"
+              >
+                <Trash2 class="h-4 w-4" />
+              </button>
+            </div>
           </div>
           <ul class="mt-3 space-y-1.5">
             <li
@@ -150,13 +164,28 @@
         </GlassCard>
       </div>
 
-      <!-- Form tambah soal -->
+      <!-- Form tambah / edit soal -->
       <div class="lg:col-span-5">
         <GlassCard class="p-5 lg:sticky lg:top-6">
-          <h2 class="text-base font-extrabold tracking-tight text-zinc-50">Tambah Soal</h2>
-          <p class="mt-1 text-xs text-zinc-500">Pilihan ganda, tandai satu jawaban benar.</p>
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <h2 class="text-base font-extrabold tracking-tight text-zinc-50">
+                {{ editingQuizId ? 'Edit Soal' : 'Tambah Soal' }}
+              </h2>
+              <p class="mt-1 text-xs text-zinc-500">Pilihan ganda, tandai satu jawaban benar.</p>
+            </div>
+            <button
+              v-if="editingQuizId"
+              type="button"
+              class="shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-300 transition-colors hover:bg-white/10"
+              @click="cancelEdit"
+            >
+              Batal edit
+            </button>
+          </div>
 
           <button
+            v-if="!editingQuizId"
             type="button"
             class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-accent-blue/40 bg-accent-blue/10 px-3 py-2.5 text-sm font-semibold text-zinc-100 transition-colors hover:bg-accent-blue/15"
             @click="openImport"
@@ -164,7 +193,7 @@
             <Upload class="h-4 w-4" />
             Impor dari Word (.docx)
           </button>
-          <div class="mt-4 flex items-center gap-3">
+          <div v-if="!editingQuizId" class="mt-4 flex items-center gap-3">
             <span class="h-px flex-1 bg-white/10" />
             <span class="text-[11px] font-semibold uppercase tracking-wide text-zinc-600">atau isi manual</span>
             <span class="h-px flex-1 bg-white/10" />
@@ -221,9 +250,9 @@
               {{ addError }}
             </p>
 
-            <Button size="md" class="w-full" :disabled="adding" @click="addQuiz">
-              <Plus class="h-4 w-4" />
-              {{ adding ? 'Menyimpan...' : 'Simpan soal' }}
+            <Button size="md" class="w-full" :disabled="adding" @click="saveQuiz">
+              <component :is="editingQuizId ? Save : Plus" class="h-4 w-4" />
+              {{ adding ? 'Menyimpan...' : editingQuizId ? 'Simpan perubahan' : 'Simpan soal' }}
             </Button>
           </div>
         </GlassCard>
@@ -397,7 +426,7 @@ Jawaban: B</pre>
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { AlertTriangle, ArrowLeft, CheckCircle2, Circle, Clock, Plus, Power, RotateCw, Save, Trash2, Upload, X, XCircle } from 'lucide-vue-next'
+import { AlertTriangle, ArrowLeft, CheckCircle2, Circle, Clock, Pencil, Plus, Power, RotateCw, Save, Trash2, Upload, X, XCircle } from 'lucide-vue-next'
 
 import Button from '~/components/ui/button/Button.vue'
 import GlassCard from '~/components/ui/GlassCard.vue'
@@ -505,7 +534,7 @@ function toLocalInput(iso: string) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-// --- Tambah soal ---
+// --- Tambah / edit soal ---
 const form = reactive({
   question: '',
   options: ['', ''] as string[],
@@ -513,6 +542,7 @@ const form = reactive({
 })
 const adding = ref(false)
 const addError = ref<string | null>(null)
+const editingQuizId = ref<number | null>(null)
 
 function removeOption(idx: number) {
   form.options.splice(idx, 1)
@@ -526,7 +556,24 @@ function resetForm() {
   form.correctIndex = 0
 }
 
-async function addQuiz() {
+function startEdit(q: Quiz) {
+  editingQuizId.value = q.id
+  addError.value = null
+  form.question = q.question
+  form.options = q.options.map((o) => o.text)
+  const idx = q.options.findIndex((o) => o.isCorrect)
+  form.correctIndex = idx >= 0 ? idx : 0
+  // Gulir ke atas agar form (sticky) terlihat di layar kecil.
+  if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function cancelEdit() {
+  editingQuizId.value = null
+  addError.value = null
+  resetForm()
+}
+
+async function saveQuiz() {
   addError.value = null
   const question = form.question.trim()
   const options = form.options.map((t) => t.trim())
@@ -545,14 +592,19 @@ async function addQuiz() {
 
   adding.value = true
   try {
-    await $fetch(`/api/lessons/${lessonId}/quizzes`, {
-      method: 'POST',
-      body: {
-        question,
-        options: options.map((text, idx) => ({ text, isCorrect: idx === form.correctIndex })),
-      },
-    })
-    resetForm()
+    const body = {
+      question,
+      // Hanya kirim pilihan yang terisi; sesuaikan kembali penanda jawaban benar.
+      options: options
+        .map((text, idx) => ({ text, isCorrect: idx === form.correctIndex }))
+        .filter((o) => o.text.length > 0),
+    }
+    if (editingQuizId.value) {
+      await $fetch(`/api/quizzes/${editingQuizId.value}`, { method: 'PUT', body })
+    } else {
+      await $fetch(`/api/lessons/${lessonId}/quizzes`, { method: 'POST', body })
+    }
+    cancelEdit()
     await refresh()
   } catch (err: any) {
     addError.value = err?.statusMessage ?? err?.data?.statusMessage ?? 'Gagal menyimpan soal.'

@@ -62,6 +62,23 @@
                 </span>
                 <span class="text-sm font-bold text-zinc-100">{{ item.studentCount }}</span>
               </div>
+              <button
+                type="button"
+                class="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/5 text-zinc-400 transition-colors hover:border-accent-blue/30 hover:bg-accent-blue/10 hover:text-zinc-100"
+                title="Ganti nama / mode"
+                @click.stop.prevent="openRename(item)"
+              >
+                <Pencil class="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                class="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/5 text-zinc-400 transition-colors hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300"
+                title="Hapus latihan"
+                :disabled="deletingId === item.id"
+                @click.stop.prevent="removeLatihan(item)"
+              >
+                <Trash2 class="h-4 w-4" />
+              </button>
               <ChevronRight class="h-4 w-4 text-zinc-600 transition-transform group-hover:translate-x-0.5" />
             </div>
           </div>
@@ -135,12 +152,79 @@
         </Button>
       </div>
     </Dialog>
+
+    <!-- Dialog ganti nama / mode -->
+    <Dialog v-model:open="isRenameOpen">
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold tracking-wide text-zinc-500">Edit</p>
+          <h3 class="mt-1 text-lg font-extrabold tracking-tight text-zinc-50">Ubah Latihan</h3>
+          <p class="mt-2 text-sm text-zinc-500">Ganti judul atau mode pengerjaan.</p>
+        </div>
+        <button
+          type="button"
+          class="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-white/5 text-zinc-300 transition-colors hover:bg-white/6"
+          @click="isRenameOpen = false"
+        >
+          <X class="h-4 w-4" />
+        </button>
+      </div>
+
+      <div class="mt-5 space-y-4">
+        <div>
+          <label class="text-xs font-semibold text-zinc-300">Judul</label>
+          <div class="mt-1.5">
+            <Input v-model="renameTitle" placeholder="Judul latihan" />
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold text-zinc-300">Mode</label>
+          <div class="mt-1.5 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              class="rounded-xl border px-3 py-2.5 text-left transition-all"
+              :class="renameAllowRetake
+                ? 'border-accent-blue/60 bg-accent-blue/15 text-zinc-50'
+                : 'border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10'"
+              @click="renameAllowRetake = true"
+            >
+              <p class="text-sm font-semibold">Latihan</p>
+              <p class="mt-0.5 text-[11px] opacity-80">Boleh diulang, ambil nilai terbaru</p>
+            </button>
+            <button
+              type="button"
+              class="rounded-xl border px-3 py-2.5 text-left transition-all"
+              :class="!renameAllowRetake
+                ? 'border-amber-500/60 bg-amber-500/15 text-zinc-50'
+                : 'border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10'"
+              @click="renameAllowRetake = false"
+            >
+              <p class="text-sm font-semibold">Tes</p>
+              <p class="mt-0.5 text-[11px] opacity-80">Sekali kerjakan, nilai terkunci</p>
+            </button>
+          </div>
+        </div>
+
+        <p v-if="renameError" class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-xs text-rose-300">
+          {{ renameError }}
+        </p>
+      </div>
+
+      <div class="mt-5 flex items-center justify-end gap-2">
+        <Button variant="ghost" size="md" @click="isRenameOpen = false">Batal</Button>
+        <Button size="md" :disabled="renaming" @click="saveRename">
+          <Save class="h-4 w-4" />
+          {{ renaming ? 'Menyimpan...' : 'Simpan' }}
+        </Button>
+      </div>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ChevronRight, Plus, Users, X } from 'lucide-vue-next'
+import { ChevronRight, Pencil, Plus, Save, Trash2, Users, X } from 'lucide-vue-next'
 
 import Button from '~/components/ui/button/Button.vue'
 import GlassCard from '~/components/ui/GlassCard.vue'
@@ -209,6 +293,58 @@ async function createLatihan() {
     error.value = err?.statusMessage ?? err?.data?.statusMessage ?? 'Gagal membuat latihan.'
   } finally {
     submitting.value = false
+  }
+}
+
+// --- Ganti nama / mode latihan ---
+const isRenameOpen = ref(false)
+const renameId = ref<number | null>(null)
+const renameTitle = ref('')
+const renameAllowRetake = ref(true)
+const renaming = ref(false)
+const renameError = ref<string | null>(null)
+
+function openRename(item: LatihanItem) {
+  renameId.value = item.id
+  renameTitle.value = item.title
+  renameAllowRetake.value = item.allowRetake
+  renameError.value = null
+  isRenameOpen.value = true
+}
+
+async function saveRename() {
+  renameError.value = null
+  if (!renameTitle.value.trim()) {
+    renameError.value = 'Judul wajib diisi.'
+    return
+  }
+  renaming.value = true
+  try {
+    await $fetch(`/api/lessons/${renameId.value}`, {
+      method: 'PUT',
+      body: { title: renameTitle.value.trim(), type: 'QUIZ', allowRetake: renameAllowRetake.value },
+    })
+    isRenameOpen.value = false
+    await refresh()
+  } catch (err: any) {
+    renameError.value = err?.statusMessage ?? err?.data?.statusMessage ?? 'Gagal menyimpan perubahan.'
+  } finally {
+    renaming.value = false
+  }
+}
+
+// --- Hapus latihan ---
+const deletingId = ref<number | null>(null)
+async function removeLatihan(item: LatihanItem) {
+  if (!confirm(`Hapus latihan “${item.title}”? Semua soal & nilai terkait juga akan terhapus.`)) return
+  deletingId.value = item.id
+  try {
+    await $fetch(`/api/lessons/${item.id}`, { method: 'DELETE' })
+    await refresh()
+  } catch (err: any) {
+    alert(err?.statusMessage ?? err?.data?.statusMessage ?? 'Gagal menghapus latihan.')
+  } finally {
+    deletingId.value = null
   }
 }
 
