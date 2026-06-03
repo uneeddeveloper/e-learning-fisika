@@ -60,7 +60,7 @@
 
           <!-- QUIZ -->
           <div v-else-if="lesson.type === 'QUIZ'">
-            <div class="mb-4 flex items-center gap-2">
+            <div class="mb-4 flex flex-wrap items-center gap-2">
               <span
                 class="rounded-full border px-2.5 py-0.5 text-[11px] font-semibold"
                 :class="lesson.allowRetake
@@ -69,9 +69,27 @@
               >
                 {{ lesson.allowRetake ? 'Latihan · boleh diulang' : 'Tes · sekali kerjakan' }}
               </span>
+              <span
+                v-if="lesson.deadline"
+                class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold"
+                :class="lesson.canWork
+                  ? 'border-white/10 bg-white/5 text-zinc-300'
+                  : 'border-rose-500/30 bg-rose-500/10 text-rose-300'"
+              >
+                <Clock class="h-3 w-3" />
+                Deadline: {{ formatDateTime(lesson.deadline) }}
+              </span>
             </div>
 
-            <p v-if="quizPending" class="text-sm text-zinc-500">Memuat soal...</p>
+            <div
+              v-if="lesson.quizStatus === 'expired' || lesson.quizStatus === 'inactive'"
+              class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4"
+            >
+              <p class="text-sm font-bold text-zinc-200">Latihan tidak aktif</p>
+              <p class="mt-1 text-sm text-zinc-500">Latihan ini sedang tidak tersedia.</p>
+            </div>
+
+            <p v-else-if="quizPending" class="text-sm text-zinc-500">Memuat soal...</p>
 
             <div v-else-if="!quizzes.length" class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
               <p class="text-sm text-zinc-500">Belum ada soal pada latihan ini.</p>
@@ -87,13 +105,22 @@
                 <p class="mt-1 text-sm text-zinc-400">{{ resultCorrect }} benar dari {{ resultTotal }} soal</p>
 
                 <div class="mt-4 flex items-center justify-center gap-2">
-                  <Button v-if="lesson.allowRetake" size="md" @click="retry">
+                  <Button v-if="lesson.allowRetake && lesson.canWork" size="md" @click="retry">
                     <RotateCw class="h-4 w-4" />
                     Kerjakan ulang
                   </Button>
+                  <span v-else-if="!lesson.canWork" class="text-xs text-rose-300/90">Waktu pengerjaan sudah habis.</span>
                   <span v-else class="text-xs text-amber-300/90">Tes terkunci — tidak bisa diulang.</span>
                 </div>
               </div>
+            </div>
+
+            <!-- Terkunci: waktu pengerjaan habis (grace period) -->
+            <div v-else-if="!lesson.canWork" class="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-4">
+              <p class="text-sm font-bold text-rose-200">Waktu pengerjaan habis</p>
+              <p class="mt-1 text-sm text-rose-100/80">
+                Latihan ini sudah melewati batas deadline, jadi tidak bisa dikerjakan lagi.
+              </p>
             </div>
 
             <!-- Form pengerjaan -->
@@ -187,7 +214,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ArrowLeft, RotateCw, Send } from 'lucide-vue-next'
+import { ArrowLeft, Clock, RotateCw, Send } from 'lucide-vue-next'
 
 import Button from '~/components/ui/button/Button.vue'
 import GlassCard from '~/components/ui/GlassCard.vue'
@@ -197,6 +224,7 @@ definePageMeta({
   middleware: 'auth',
 })
 
+type QuizStatus = 'open' | 'grace' | 'expired' | 'inactive'
 type LessonDetail = {
   id: number
   title: string
@@ -205,6 +233,9 @@ type LessonDetail = {
   videoUrl: string | null
   order: number
   allowRetake: boolean
+  deadline: string | null
+  quizStatus: QuizStatus | null
+  canWork: boolean
   createdAt: string
   course: { id: number; title: string } | null
 }
@@ -237,6 +268,8 @@ const answeredCount = computed(() => Object.keys(answers).length)
 
 async function loadQuiz() {
   if (!lesson.value || lesson.value.type !== 'QUIZ') return
+  // Quiz nonaktif/kedaluwarsa tidak punya soal yang bisa dimuat (server menolak).
+  if (lesson.value.quizStatus === 'expired' || lesson.value.quizStatus === 'inactive') return
   quizPending.value = true
   try {
     const data = await $fetch<QuizPayload>(`/api/lessons/${lesson.value.id}/quizzes`)
@@ -291,6 +324,10 @@ function scoreColor(score: number) {
   if (score >= 80) return 'text-emerald-300'
   if (score >= 60) return 'text-amber-300'
   return 'text-rose-300'
+}
+
+function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
 const youtubeEmbedId = computed(() => {

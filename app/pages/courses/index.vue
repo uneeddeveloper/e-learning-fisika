@@ -84,6 +84,23 @@
             >
           </div>
 
+          <div v-if="l.type === 'QUIZ' && (l.quizStatus === 'grace' || l.deadline)" class="mt-3">
+            <span
+              v-if="l.quizStatus === 'grace'"
+              class="inline-flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-rose-300"
+            >
+              <Clock class="h-3 w-3" />
+              Waktu pengerjaan habis
+            </span>
+            <span
+              v-else-if="l.deadline"
+              class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-semibold text-zinc-300"
+            >
+              <Clock class="h-3 w-3" />
+              Deadline {{ formatDateTime(l.deadline) }}
+            </span>
+          </div>
+
           <div class="mt-4 flex items-center justify-between">
             <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-300">
               {{ formatDate(l.createdAt) }}
@@ -104,6 +121,7 @@ import { computed, ref } from 'vue'
 import {
   ArrowRight,
   CheckCircle2,
+  Clock,
   FileText,
   Search,
   Video,
@@ -124,6 +142,8 @@ type LessonItem = {
   videoUrl: string | null
   content: string | null
   order: number
+  deadline: string | null
+  quizStatus: 'open' | 'grace' | 'expired' | 'inactive' | null
   createdAt: string
 }
 
@@ -171,5 +191,9 @@ function youtubeId(url: string | null): string | null {
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 </script>

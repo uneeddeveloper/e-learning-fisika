@@ -47,6 +47,68 @@
       </div>
     </div>
 
+    <!-- Pengaturan: aktif/nonaktif + deadline -->
+    <GlassCard class="mt-6 p-5">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span
+            class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold"
+            :class="statusBadge.class"
+          >
+            <component :is="statusBadge.icon" class="h-3.5 w-3.5" />
+            {{ statusBadge.label }}
+          </span>
+          <p v-if="quizData?.lesson?.deadline" class="text-xs text-zinc-500">
+            Deadline: {{ formatDateTime(quizData.lesson.deadline) }}
+          </p>
+          <p v-else class="text-xs text-zinc-500">Tanpa deadline</p>
+        </div>
+
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors"
+          :class="quizData?.lesson?.isActive
+            ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15'
+            : 'border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10'"
+          :disabled="savingSettings"
+          @click="toggleActive"
+        >
+          <Power class="h-4 w-4" />
+          {{ quizData?.lesson?.isActive ? 'Aktif — klik untuk nonaktifkan' : 'Nonaktif — klik untuk aktifkan' }}
+        </button>
+      </div>
+
+      <div class="mt-4 flex flex-wrap items-end gap-3 border-t border-white/10 pt-4">
+        <div class="min-w-[220px]">
+          <label class="text-xs font-semibold text-zinc-300">Batas waktu pengerjaan (deadline)</label>
+          <input
+            v-model="deadlineInput"
+            type="datetime-local"
+            class="mt-1.5 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-100 outline-none transition-all focus:border-accent-blue/50 focus:ring-2 focus:ring-accent-blue/20 [color-scheme:dark]"
+          >
+        </div>
+        <Button size="md" :disabled="savingSettings" @click="saveDeadline">
+          <Save class="h-4 w-4" />
+          Simpan deadline
+        </Button>
+        <Button
+          v-if="quizData?.lesson?.deadline"
+          variant="ghost"
+          size="md"
+          :disabled="savingSettings"
+          @click="clearDeadline"
+        >
+          Hapus deadline
+        </Button>
+      </div>
+      <p class="mt-2 text-[11px] text-zinc-500">
+        Setelah deadline lewat, latihan terkunci 1 hari (siswa lihat “waktu pengerjaan habis”), lalu otomatis nonaktif.
+      </p>
+      <p v-if="settingsError" class="mt-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-xs text-rose-300">
+        {{ settingsError }}
+      </p>
+    </GlassCard>
+
     <!-- TAB SOAL -->
     <div v-if="tab === 'soal'" class="mt-6 grid gap-4 lg:grid-cols-12">
       <!-- Daftar soal -->
@@ -218,9 +280,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ArrowLeft, CheckCircle2, Circle, Plus, RotateCw, Trash2, X } from 'lucide-vue-next'
+import { AlertTriangle, ArrowLeft, CheckCircle2, Circle, Clock, Plus, Power, RotateCw, Save, Trash2, X, XCircle } from 'lucide-vue-next'
 
 import Button from '~/components/ui/button/Button.vue'
 import GlassCard from '~/components/ui/GlassCard.vue'
@@ -231,10 +293,20 @@ definePageMeta({
   middleware: 'auth',
 })
 
+type QuizStatus = 'open' | 'grace' | 'expired' | 'inactive'
 type Option = { id: number; text: string; isCorrect: boolean }
 type Quiz = { id: number; question: string; options: Option[] }
 type QuizData = {
-  lesson: { id: number; title: string; type: string; allowRetake: boolean }
+  lesson: {
+    id: number
+    title: string
+    type: string
+    allowRetake: boolean
+    isActive: boolean
+    deadline: string | null
+    status: QuizStatus
+    canWork: boolean
+  }
   quizzes: Quiz[]
 }
 type Results = {
@@ -262,6 +334,60 @@ const { data: results, pending: resultsPending, refresh: refreshResults } = awai
 watch(tab, (t) => {
   if (t === 'nilai') refreshResults()
 })
+
+// --- Pengaturan: aktif/nonaktif + deadline ---
+const savingSettings = ref(false)
+const settingsError = ref<string | null>(null)
+const deadlineInput = ref('')
+
+// Sinkronkan input deadline dengan data dari server (format datetime-local lokal).
+watch(() => quizData.value?.lesson?.deadline, (d) => {
+  deadlineInput.value = d ? toLocalInput(d) : ''
+}, { immediate: true })
+
+const statusBadge = computed(() => {
+  const s = quizData.value?.lesson?.status
+  if (s === 'open') return { label: 'Aktif', class: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300', icon: CheckCircle2 }
+  if (s === 'grace') return { label: 'Waktu habis (terkunci)', class: 'border-amber-500/30 bg-amber-500/10 text-amber-300', icon: AlertTriangle }
+  if (s === 'expired') return { label: 'Kedaluwarsa (nonaktif)', class: 'border-rose-500/30 bg-rose-500/10 text-rose-300', icon: Clock }
+  return { label: 'Nonaktif', class: 'border-white/15 bg-white/5 text-zinc-400', icon: XCircle }
+})
+
+async function patchSettings(body: Record<string, unknown>) {
+  savingSettings.value = true
+  settingsError.value = null
+  try {
+    await $fetch(`/api/lessons/${lessonId}/settings`, { method: 'PATCH', body })
+    await refresh()
+  } catch (err: any) {
+    settingsError.value = err?.statusMessage ?? err?.data?.statusMessage ?? 'Gagal menyimpan pengaturan.'
+  } finally {
+    savingSettings.value = false
+  }
+}
+
+function toggleActive() {
+  patchSettings({ isActive: !quizData.value?.lesson?.isActive })
+}
+
+function saveDeadline() {
+  if (!deadlineInput.value) {
+    settingsError.value = 'Pilih tanggal & jam deadline dulu, atau gunakan “Hapus deadline”.'
+    return
+  }
+  patchSettings({ deadline: new Date(deadlineInput.value).toISOString() })
+}
+
+function clearDeadline() {
+  patchSettings({ deadline: null })
+}
+
+// ISO -> nilai input datetime-local (waktu lokal).
+function toLocalInput(iso: string) {
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
 
 // --- Tambah soal ---
 const form = reactive({

@@ -1,4 +1,5 @@
 import { prisma } from '../../../utils/prisma'
+import { computeQuizStatus, canWorkOnQuiz } from '../../../utils/quizStatus'
 
 export default defineEventHandler(async (event) => {
   const lessonId = Number(getRouterParam(event, 'id'))
@@ -10,12 +11,21 @@ export default defineEventHandler(async (event) => {
   const user = session?.user as { id: number; role: string } | undefined
   const isTeacher = user?.role === 'TEACHER' || user?.role === 'ADMIN'
 
-  const lesson = await prisma.lesson.findUnique({
+  const lessonRow = await prisma.lesson.findUnique({
     where: { id: lessonId },
-    select: { id: true, title: true, type: true, allowRetake: true },
+    select: { id: true, title: true, type: true, allowRetake: true, isActive: true, deadline: true },
   })
-  if (!lesson) {
+  if (!lessonRow) {
     throw createError({ statusCode: 404, statusMessage: 'Lesson tidak ditemukan.' })
+  }
+
+  const status = computeQuizStatus(lessonRow.isActive, lessonRow.deadline)
+  const canWork = canWorkOnQuiz(status)
+  const lesson = { ...lessonRow, status, canWork }
+
+  // Siswa tidak boleh membuka quiz yang sudah nonaktif/kedaluwarsa.
+  if (!isTeacher && (status === 'inactive' || status === 'expired')) {
+    throw createError({ statusCode: 403, statusMessage: 'Latihan ini sedang tidak aktif.' })
   }
 
   const quizzes = await prisma.quiz.findMany({

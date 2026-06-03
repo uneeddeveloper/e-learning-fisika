@@ -7,7 +7,7 @@
           Kelola Materi
         </h1>
         <p class="mt-2 max-w-2xl text-sm text-zinc-400">
-          Tambah, ubah, atau hapus materi (video, bacaan, quiz) yang dilihat siswa.
+          Tambah, ubah, atau hapus materi video & bacaan. Quiz dikelola di menu Soal Latihan.
         </p>
       </div>
 
@@ -19,12 +19,12 @@
 
     <div class="mt-6 grid gap-3">
       <p v-if="pending" class="text-sm text-zinc-500">Memuat...</p>
-      <GlassCard v-else-if="!lessons || lessons.length === 0" class="p-8 text-center">
+      <GlassCard v-else-if="materiList.length === 0" class="p-8 text-center">
         <p class="text-sm font-semibold text-zinc-300">Belum ada materi</p>
         <p class="mt-2 text-sm text-zinc-500">Klik “Tambah Materi” untuk membuat materi pertama.</p>
       </GlassCard>
 
-      <GlassCard v-for="l in lessons" :key="l.id" class="p-4">
+      <GlassCard v-for="l in materiList" :key="l.id" class="p-4">
         <div class="flex items-center justify-between gap-4">
           <div class="flex min-w-0 items-center gap-3">
             <div class="relative grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/5">
@@ -37,13 +37,6 @@
           </div>
 
           <div class="flex items-center gap-2">
-            <NuxtLink
-              v-if="l.type === 'QUIZ'"
-              :to="`/teacher/latihan/${l.id}`"
-              class="hidden rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-zinc-300 transition-colors hover:bg-white/10 sm:inline-flex"
-            >
-              Kelola soal
-            </NuxtLink>
             <button
               type="button"
               class="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 transition-colors hover:bg-white/10"
@@ -144,35 +137,6 @@
           </p>
         </div>
 
-        <div v-if="form.type === 'QUIZ'">
-          <label class="text-xs font-semibold text-zinc-300">Mode pengerjaan</label>
-          <div class="mt-1.5 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              class="rounded-xl border px-3 py-2.5 text-left transition-all"
-              :class="form.allowRetake
-                ? 'border-accent-blue/60 bg-accent-blue/15 text-zinc-50'
-                : 'border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10'"
-              @click="form.allowRetake = true"
-            >
-              <p class="text-sm font-semibold">Latihan</p>
-              <p class="mt-0.5 text-[11px] opacity-80">Boleh diulang</p>
-            </button>
-            <button
-              type="button"
-              class="rounded-xl border px-3 py-2.5 text-left transition-all"
-              :class="!form.allowRetake
-                ? 'border-amber-500/60 bg-amber-500/15 text-zinc-50'
-                : 'border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10'"
-              @click="form.allowRetake = false"
-            >
-              <p class="text-sm font-semibold">Tes</p>
-              <p class="mt-0.5 text-[11px] opacity-80">Sekali kerjakan</p>
-            </button>
-          </div>
-          <p class="mt-2 text-[11px] text-zinc-500">Soal-soalnya ditambahkan lewat menu Soal Latihan.</p>
-        </div>
-
         <p v-if="error" class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-xs text-rose-300">
           {{ error }}
         </p>
@@ -191,7 +155,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { CheckCircle2, FileText, Pencil, Trash2, Upload, Video, X } from 'lucide-vue-next'
+import { FileText, Pencil, Trash2, Upload, Video, X } from 'lucide-vue-next'
 
 import Button from '~/components/ui/button/Button.vue'
 import GlassCard from '~/components/ui/GlassCard.vue'
@@ -203,11 +167,12 @@ definePageMeta({
   middleware: 'auth',
 })
 
-type LessonType = 'VIDEO' | 'READING' | 'QUIZ'
+// Materi non-quiz. Quiz dikelola terpisah di menu Soal Latihan.
+type MateriType = 'VIDEO' | 'READING'
 type LessonItem = {
   id: number
   title: string
-  type: LessonType
+  type: 'VIDEO' | 'READING' | 'QUIZ'
   videoUrl: string | null
   content: string | null
   order: number
@@ -219,20 +184,20 @@ const { data: lessons, pending, refresh } = await useFetch<LessonItem[]>('/api/l
   default: () => [],
 })
 
-const typeOptions: { value: LessonType; label: string; icon: any }[] = [
+// Sembunyikan quiz dari manajemen materi.
+const materiList = computed(() => (lessons.value ?? []).filter((l) => l.type !== 'QUIZ'))
+
+const typeOptions: { value: MateriType; label: string; icon: any }[] = [
   { value: 'VIDEO', label: 'Video', icon: Video },
   { value: 'READING', label: 'Reading', icon: FileText },
-  { value: 'QUIZ', label: 'Quiz', icon: CheckCircle2 },
 ]
 
-function typeIcon(type: LessonType) {
+function typeIcon(type: LessonItem['type']) {
   if (type === 'VIDEO') return Video
-  if (type === 'QUIZ') return CheckCircle2
   return FileText
 }
-function typeLabel(type: LessonType) {
+function typeLabel(type: LessonItem['type']) {
   if (type === 'VIDEO') return 'Video'
-  if (type === 'QUIZ') return 'Quiz'
   return 'Reading'
 }
 
@@ -242,11 +207,10 @@ const submitting = ref(false)
 const error = ref<string | null>(null)
 
 const form = reactive({
-  type: 'READING' as LessonType,
+  type: 'READING' as MateriType,
   title: '',
   content: '',
   videoUrl: '',
-  allowRetake: true,
 })
 
 function resetForm() {
@@ -254,7 +218,6 @@ function resetForm() {
   form.title = ''
   form.content = ''
   form.videoUrl = ''
-  form.allowRetake = true
   error.value = null
 }
 
@@ -267,11 +230,10 @@ function openCreate() {
 function openEdit(l: LessonItem) {
   editingId.value = l.id
   error.value = null
-  form.type = l.type
+  form.type = (l.type === 'VIDEO' ? 'VIDEO' : 'READING')
   form.title = l.title
   form.content = l.content ?? ''
   form.videoUrl = l.videoUrl ?? ''
-  form.allowRetake = l.allowRetake
   isOpen.value = true
 }
 
@@ -306,7 +268,6 @@ async function submit() {
       type: form.type,
       content: form.type === 'READING' ? form.content || undefined : undefined,
       videoUrl: form.type === 'VIDEO' ? form.videoUrl || undefined : undefined,
-      allowRetake: form.allowRetake,
     }
     if (editingId.value) {
       await $fetch(`/api/lessons/${editingId.value}`, { method: 'PUT', body })

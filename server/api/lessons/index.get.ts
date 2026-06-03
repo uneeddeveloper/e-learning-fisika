@@ -1,4 +1,5 @@
 import { prisma } from '../../utils/prisma'
+import { computeQuizStatus, isVisibleToStudent } from '../../utils/quizStatus'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -6,6 +7,10 @@ export default defineEventHandler(async (event) => {
   const where = typeFilter === 'QUIZ' || typeFilter === 'VIDEO' || typeFilter === 'READING'
     ? { type: typeFilter as 'QUIZ' | 'VIDEO' | 'READING' }
     : undefined
+
+  const session = await getUserSession(event)
+  const role = (session?.user as { role?: string } | undefined)?.role
+  const isTeacher = role === 'TEACHER' || role === 'ADMIN'
 
   const lessons = await prisma.lesson.findMany({
     where,
@@ -19,14 +24,24 @@ export default defineEventHandler(async (event) => {
       content: true,
       order: true,
       allowRetake: true,
+      isActive: true,
+      deadline: true,
       createdAt: true,
       _count: { select: { quizzes: true } },
     },
   })
 
-  // Untuk daftar latihan: hitung berapa siswa unik yang sudah mengerjakan tiap lesson.
+  // Lampirkan status untuk lesson QUIZ.
+  const withStatus = lessons.map((l) => ({
+    ...l,
+    questionCount: l._count.quizzes,
+    quizStatus: l.type === 'QUIZ' ? computeQuizStatus(l.isActive, l.deadline) : null,
+    _count: undefined,
+  }))
+
+  // Untuk daftar latihan (guru): hitung jumlah siswa unik yang sudah mengerjakan.
   if (typeFilter === 'QUIZ') {
-    const lessonIds = lessons.map((l) => l.id)
+    const lessonIds = withStatus.map((l) => l.id)
     const quizzes = lessonIds.length
       ? await prisma.quiz.findMany({
           where: { lessonId: { in: lessonIds } },
@@ -44,7 +59,6 @@ export default defineEventHandler(async (event) => {
         })
       : []
 
-    // Set userId unik per lesson.
     const studentsPerLesson = new Map<number, Set<number>>()
     for (const r of results) {
       const lessonId = quizToLesson.get(r.quizId)
@@ -53,13 +67,13 @@ export default defineEventHandler(async (event) => {
       studentsPerLesson.get(lessonId)!.add(r.userId)
     }
 
-    return lessons.map((l) => ({
-      ...l,
-      questionCount: l._count.quizzes,
-      studentCount: studentsPerLesson.get(l.id)?.size ?? 0,
-      _count: undefined,
-    }))
+    return withStatus.map((l) => ({ ...l, studentCount: studentsPerLesson.get(l.id)?.size ?? 0 }))
   }
 
-  return lessons.map((l) => ({ ...l, questionCount: l._count.quizzes, _count: undefined }))
+  // Siswa tidak melihat quiz yang nonaktif/kedaluwarsa.
+  const visible = isTeacher
+    ? withStatus
+    : withStatus.filter((l) => l.type !== 'QUIZ' || (l.quizStatus != null && isVisibleToStudent(l.quizStatus)))
+
+  return visible
 })

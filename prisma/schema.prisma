@@ -56,6 +56,11 @@ model Lesson {
   // Untuk lesson bertipe QUIZ: true = Latihan (boleh diulang, ambil nilai terbaru),
   // false = Tes (sekali kerjakan, nilai terkunci).
   allowRetake Boolean  @default(true)
+  // Khusus QUIZ: toggle aktif/nonaktif oleh guru.
+  isActive    Boolean  @default(true)
+  // Khusus QUIZ: batas waktu pengerjaan. null = tanpa batas.
+  // Lewat deadline: terkunci 1 hari ("waktu pengerjaan habis"), lalu otomatis nonaktif.
+  deadline    DateTime?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 

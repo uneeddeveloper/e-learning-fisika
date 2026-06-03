@@ -1,4 +1,5 @@
 import { prisma } from '../../utils/prisma'
+import { computeQuizStatus, canWorkOnQuiz } from '../../utils/quizStatus'
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))
@@ -16,6 +17,8 @@ export default defineEventHandler(async (event) => {
       videoUrl: true,
       order: true,
       allowRetake: true,
+      isActive: true,
+      deadline: true,
       createdAt: true,
       course: { select: { id: true, title: true } },
     },
@@ -25,5 +28,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Lesson tidak ditemukan.' })
   }
 
-  return lesson
+  const quizStatus = lesson.type === 'QUIZ' ? computeQuizStatus(lesson.isActive, lesson.deadline) : null
+  const canWork = quizStatus ? canWorkOnQuiz(quizStatus) : false
+
+  return { ...lesson, quizStatus, canWork }
 })

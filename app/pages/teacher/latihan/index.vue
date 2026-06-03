@@ -33,7 +33,7 @@
         <GlassCard class="p-5 transition-all duration-200 group-hover:border-accent-blue/35">
           <div class="flex items-center justify-between gap-4">
             <div class="min-w-0">
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <span
                   class="rounded-full border px-2.5 py-0.5 text-[11px] font-semibold"
                   :class="item.allowRetake
@@ -42,10 +42,17 @@
                 >
                   {{ item.allowRetake ? 'Latihan' : 'Tes' }}
                 </span>
+                <span
+                  class="rounded-full border px-2.5 py-0.5 text-[11px] font-semibold"
+                  :class="statusBadge(item.quizStatus).class"
+                >
+                  {{ statusBadge(item.quizStatus).label }}
+                </span>
                 <p class="truncate text-base font-bold text-zinc-50">{{ item.title }}</p>
               </div>
               <p class="mt-1 text-xs text-zinc-500">
-                {{ item.questionCount }} soal · {{ item.studentCount }} siswa mengerjakan · {{ formatDate(item.createdAt) }}
+                {{ item.questionCount }} soal · {{ item.studentCount }} siswa mengerjakan
+                <span v-if="item.deadline"> · deadline {{ formatDate(item.deadline) }}</span>
               </p>
             </div>
             <div class="flex items-center gap-3">
@@ -145,13 +152,24 @@ definePageMeta({
   middleware: 'auth',
 })
 
+type QuizStatus = 'open' | 'grace' | 'expired' | 'inactive'
 type LatihanItem = {
   id: number
   title: string
   allowRetake: boolean
+  isActive: boolean
+  deadline: string | null
+  quizStatus: QuizStatus | null
   questionCount: number
   studentCount: number
   createdAt: string
+}
+
+function statusBadge(status: QuizStatus | null) {
+  if (status === 'open') return { label: 'Aktif', class: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' }
+  if (status === 'grace') return { label: 'Waktu habis', class: 'border-amber-500/30 bg-amber-500/10 text-amber-300' }
+  if (status === 'expired') return { label: 'Kedaluwarsa', class: 'border-rose-500/30 bg-rose-500/10 text-rose-300' }
+  return { label: 'Nonaktif', class: 'border-white/15 bg-white/5 text-zinc-400' }
 }
 
 const { data: items, pending, refresh } = await useFetch<LatihanItem[]>('/api/lessons', {
