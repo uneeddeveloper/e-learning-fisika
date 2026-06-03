@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { prisma } from '../../utils/prisma'
+import { logActivity } from '../../utils/activityLog'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ name?: string; email?: string; password?: string }>(event)
@@ -27,6 +28,8 @@ export default defineEventHandler(async (event) => {
   })
 
   await setUserSession(event, { user })
+
+  await logActivity(event, 'REGISTER', { actor: user, detail: `Pendaftaran akun baru: ${user.email}.` })
 
   return { user }
 })

@@ -44,75 +44,115 @@
       </GlassCard>
     </div>
 
-    <!-- Lesson Grid -->
-    <div v-else class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <NuxtLink
-        v-for="l in filtered"
-        :key="l.id"
-        :to="`/courses/${l.id}`"
-        class="block"
+    <!-- Sections: Materi & Quiz -->
+    <template v-else>
+      <section
+        v-for="section in sections"
+        :key="section.key"
+        class="mt-10 first:mt-8"
       >
-        <GlassCard class="h-full p-6 transition-all duration-200 hover:border-accent-blue/35">
-          <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0">
-              <p class="text-xs font-semibold tracking-wide text-zinc-500">
-                {{ typeLabel(l.type) }}
-              </p>
-              <h2 class="mt-2 line-clamp-2 text-lg font-extrabold tracking-tight text-zinc-50">
-                {{ l.title }}
-              </h2>
-              <p v-if="l.content" class="mt-2 line-clamp-2 text-sm text-zinc-400">
-                {{ l.content }}
-              </p>
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <div class="grid h-8 w-8 place-items-center rounded-xl border border-white/10 bg-white/5">
+              <component :is="section.icon" class="h-4 w-4 text-zinc-100" />
             </div>
-
-            <div class="relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/5">
-              <div class="pointer-events-none absolute inset-0 rounded-2xl bg-accent-blue/20 opacity-80 blur-xl" />
-              <component :is="typeIcon(l.type)" class="relative h-5 w-5 text-zinc-50" />
-            </div>
+            <h2 class="text-lg font-extrabold tracking-tight text-zinc-50">{{ section.label }}</h2>
           </div>
+          <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-semibold text-zinc-400">
+            {{ section.items.length }}
+          </span>
+        </div>
 
-          <!-- YouTube thumbnail for VIDEO -->
-          <div
-            v-if="l.type === 'VIDEO' && youtubeId(l.videoUrl)"
-            class="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-black/40"
+        <p v-if="section.items.length === 0" class="mt-4 text-sm text-zinc-500">
+          {{ query ? `Tidak ada ${section.label.toLowerCase()} yang cocok.` : `Belum ada ${section.label.toLowerCase()}.` }}
+        </p>
+
+        <div v-else class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <NuxtLink
+            v-for="l in section.items"
+            :key="l.id"
+            :to="`/courses/${l.id}`"
+            class="block"
           >
-            <img
-              :src="`https://img.youtube.com/vi/${youtubeId(l.videoUrl)}/hqdefault.jpg`"
-              :alt="l.title"
-              class="aspect-video w-full object-cover"
-            >
-          </div>
+            <GlassCard class="h-full p-6 transition-all duration-200 hover:border-accent-blue/35">
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold tracking-wide text-zinc-500">
+                    {{ typeLabel(l.type) }}
+                  </p>
+                  <h3 class="mt-2 line-clamp-2 text-lg font-extrabold tracking-tight text-zinc-50">
+                    {{ l.title }}
+                  </h3>
+                  <p v-if="l.content" class="mt-2 line-clamp-2 text-sm text-zinc-400">
+                    {{ l.content }}
+                  </p>
+                </div>
 
-          <div v-if="l.type === 'QUIZ' && (l.quizStatus === 'grace' || l.deadline)" class="mt-3">
-            <span
-              v-if="l.quizStatus === 'grace'"
-              class="inline-flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-rose-300"
-            >
-              <Clock class="h-3 w-3" />
-              Waktu pengerjaan habis
-            </span>
-            <span
-              v-else-if="l.deadline"
-              class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-semibold text-zinc-300"
-            >
-              <Clock class="h-3 w-3" />
-              Deadline {{ formatDateTime(l.deadline) }}
-            </span>
-          </div>
+                <div class="relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/5">
+                  <div class="pointer-events-none absolute inset-0 rounded-2xl bg-accent-blue/20 opacity-80 blur-xl" />
+                  <component :is="typeIcon(l.type)" class="relative h-5 w-5 text-zinc-50" />
+                </div>
+              </div>
 
-          <div class="mt-4 flex items-center justify-between">
-            <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-300">
-              {{ formatDate(l.createdAt) }}
-            </span>
-            <Button size="sm" class="pointer-events-none">
-              Buka
-              <ArrowRight class="h-4 w-4" />
-            </Button>
-          </div>
-        </GlassCard>
-      </NuxtLink>
-    </div>
+              <!-- YouTube thumbnail for VIDEO -->
+              <div
+                v-if="l.type === 'VIDEO' && youtubeId(l.videoUrl)"
+                class="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-black/40"
+              >
+                <img
+                  :src="`https://img.youtube.com/vi/${youtubeId(l.videoUrl)}/hqdefault.jpg`"
+                  :alt="l.title"
+                  class="aspect-video w-full object-cover"
+                >
+              </div>
+
+              <!-- Quiz: status pengerjaan siswa -->
+              <div v-if="l.type === 'QUIZ'" class="mt-3 flex flex-wrap items-center gap-2">
+                <span
+                  v-if="l.done"
+                  class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300"
+                >
+                  <CheckCircle2 class="h-3 w-3" />
+                  Sudah dikerjakan
+                </span>
+                <span
+                  v-else
+                  class="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300"
+                >
+                  <Circle class="h-3 w-3" />
+                  Belum dikerjakan
+                </span>
+
+                <span
+                  v-if="l.quizStatus === 'grace'"
+                  class="inline-flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-rose-300"
+                >
+                  <Clock class="h-3 w-3" />
+                  Waktu pengerjaan habis
+                </span>
+                <span
+                  v-else-if="l.deadline"
+                  class="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-semibold text-zinc-300"
+                >
+                  <Clock class="h-3 w-3" />
+                  Deadline {{ formatDateTime(l.deadline) }}
+                </span>
+              </div>
+
+              <div class="mt-4 flex items-center justify-between">
+                <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-300">
+                  {{ formatDate(l.createdAt) }}
+                </span>
+                <Button size="sm" class="pointer-events-none">
+                  Buka
+                  <ArrowRight class="h-4 w-4" />
+                </Button>
+              </div>
+            </GlassCard>
+          </NuxtLink>
+        </div>
+      </section>
+    </template>
   </div>
 </template>
 
@@ -121,8 +161,11 @@ import { computed, ref } from 'vue'
 import {
   ArrowRight,
   CheckCircle2,
+  Circle,
   Clock,
   FileText,
+  GraduationCap,
+  ListChecks,
   Search,
   Video,
 } from 'lucide-vue-next'
@@ -144,6 +187,7 @@ type LessonItem = {
   order: number
   deadline: string | null
   quizStatus: 'open' | 'grace' | 'expired' | 'inactive' | null
+  done: boolean | null
   createdAt: string
 }
 
@@ -160,6 +204,25 @@ const filtered = computed(() => {
   return (lessons.value ?? []).filter((l) =>
     [l.title, l.content ?? ''].some((v) => v.toLowerCase().includes(q)),
   )
+})
+
+// Pisahkan jadi dua kategori. API sudah mengurutkan terbaru di atas (createdAt desc).
+const sections = computed(() => {
+  const items = filtered.value ?? []
+  return [
+    {
+      key: 'materi',
+      label: 'Materi',
+      icon: GraduationCap,
+      items: items.filter((l) => l.type !== 'QUIZ'),
+    },
+    {
+      key: 'quiz',
+      label: 'Quiz',
+      icon: ListChecks,
+      items: items.filter((l) => l.type === 'QUIZ'),
+    },
+  ]
 })
 
 function typeLabel(type: LessonItem['type']) {

@@ -26,6 +26,7 @@ model User {
   enrollments    Enrollment[]
   quizResults    QuizResult[]
   labSubmissions LabSubmission[]
+  activityLogs   ActivityLog[]
 
   @@map("users")
 }
@@ -124,6 +125,30 @@ model QuizResult {
   @@index([userId])
   @@index([quizId])
   @@map("quiz_results")
+}
+
+// Catatan aktivitas untuk keamanan & audit: login, logout, kelola pengguna, dll.
+model ActivityLog {
+  id        Int      @id @default(autoincrement())
+  // Pelaku aksi. Null bila tidak diketahui (mis. login gagal dengan email asing).
+  userId    Int?
+  // Nama & email pelaku disimpan apa adanya agar log tetap terbaca walau user dihapus.
+  actorName  String?
+  actorEmail String?
+  // Kode aksi, mis. LOGIN, LOGIN_FAILED, LOGOUT, REGISTER, USER_CREATE, USER_UPDATE, USER_DELETE.
+  action    String
+  // Keterangan tambahan yang mudah dibaca.
+  detail    String?  @db.Text
+  ipAddress String?
+  userAgent String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("activity_logs")
 }
 
 enum Role {

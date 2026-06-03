@@ -69,6 +69,26 @@
                 <NotebookPen class="h-4 w-4" />
                 Hasil Worksheet
               </NuxtLink>
+
+              <div class="my-2 border-t border-white/10" />
+              <p class="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-600">Keamanan</p>
+
+              <NuxtLink
+                to="/teacher/pengguna"
+                class="flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-semibold transition-colors"
+                :class="route.path.startsWith('/teacher/pengguna') ? 'bg-white/6 text-zinc-50 border border-white/10' : 'text-zinc-300 hover:bg-white/5'"
+              >
+                <Users class="h-4 w-4" />
+                Manajemen Pengguna
+              </NuxtLink>
+              <NuxtLink
+                to="/teacher/aktivitas"
+                class="flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-semibold transition-colors"
+                :class="route.path.startsWith('/teacher/aktivitas') ? 'bg-white/6 text-zinc-50 border border-white/10' : 'text-zinc-300 hover:bg-white/5'"
+              >
+                <ShieldCheck class="h-4 w-4" />
+                Log Aktivitas
+              </NuxtLink>
             </nav>
 
             <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3">
@@ -105,7 +125,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { ClipboardList, FlaskConical, FolderOpen, GraduationCap, LayoutDashboard, LibraryBig, LogOut, NotebookPen } from 'lucide-vue-next'
+import { ClipboardList, FlaskConical, FolderOpen, GraduationCap, LayoutDashboard, LibraryBig, LogOut, NotebookPen, ShieldCheck, Users } from 'lucide-vue-next'
 
 const route = useRoute()
 const { user, clear } = useUserSession()

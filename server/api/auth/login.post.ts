@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { prisma } from '../../utils/prisma'
+import { logActivity } from '../../utils/activityLog'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -18,11 +19,17 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
+      await logActivity(event, 'LOGIN_FAILED', {
+        actor: user ? { id: user.id, name: user.name, email: user.email } : { email },
+        detail: `Percobaan login gagal untuk ${email}.`,
+      })
       throw createError({ statusCode: 401, statusMessage: 'Email atau password salah.' })
     }
 
     const safeUser = { id: user.id, name: user.name, email: user.email, role: user.role }
     await setUserSession(event, { user: safeUser })
+
+    await logActivity(event, 'LOGIN', { actor: safeUser, detail: `${safeUser.name} berhasil masuk.` })
 
     return { user: safeUser }
   } catch (err: any) {

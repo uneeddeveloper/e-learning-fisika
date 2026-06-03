@@ -9,7 +9,8 @@ export default defineEventHandler(async (event) => {
     : undefined
 
   const session = await getUserSession(event)
-  const role = (session?.user as { role?: string } | undefined)?.role
+  const sessionUser = session?.user as { id?: number; role?: string } | undefined
+  const role = sessionUser?.role
   const isTeacher = role === 'TEACHER' || role === 'ADMIN'
 
   const lessons = await prisma.lesson.findMany({
@@ -74,6 +75,37 @@ export default defineEventHandler(async (event) => {
   const visible = isTeacher
     ? withStatus
     : withStatus.filter((l) => l.type !== 'QUIZ' || (l.quizStatus != null && isVisibleToStudent(l.quizStatus)))
+
+  // Untuk siswa: tandai quiz yang sudah pernah dikerjakan.
+  const studentId = sessionUser?.id
+  if (!isTeacher && studentId != null) {
+    const quizLessonIds = visible.filter((l) => l.type === 'QUIZ').map((l) => l.id)
+    if (quizLessonIds.length) {
+      const quizzes = await prisma.quiz.findMany({
+        where: { lessonId: { in: quizLessonIds } },
+        select: { id: true, lessonId: true },
+      })
+      const quizToLesson = new Map(quizzes.map((q) => [q.id, q.lessonId]))
+      const quizIds = quizzes.map((q) => q.id)
+
+      const doneLessonIds = new Set<number>()
+      if (quizIds.length) {
+        const results = await prisma.quizResult.findMany({
+          where: { userId: studentId, quizId: { in: quizIds } },
+          select: { quizId: true },
+        })
+        for (const r of results) {
+          const lessonId = quizToLesson.get(r.quizId)
+          if (lessonId != null) doneLessonIds.add(lessonId)
+        }
+      }
+
+      return visible.map((l) => ({
+        ...l,
+        done: l.type === 'QUIZ' ? doneLessonIds.has(l.id) : null,
+      }))
+    }
+  }
 
   return visible
 })
