@@ -52,6 +52,9 @@ model Lesson {
   videoUrl  String?
   order     Int
   type      LessonType @default(VIDEO)
+  // Untuk lesson bertipe QUIZ: true = Latihan (boleh diulang, ambil nilai terbaru),
+  // false = Tes (sekali kerjakan, nilai terkunci).
+  allowRetake Boolean  @default(true)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 

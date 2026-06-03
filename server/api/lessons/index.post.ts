@@ -22,11 +22,13 @@ async function getOrCreateDefaultCourse() {
 export default defineEventHandler(async (event) => {
   await requireTeacher(event)
 
-  const body = await readBody<{ title?: string; content?: string; videoUrl?: string; type?: LessonType }>(event)
+  const body = await readBody<{ title?: string; content?: string; videoUrl?: string; type?: LessonType; allowRetake?: boolean }>(event)
   const title = body?.title?.trim()
   const type = (body?.type ?? 'READING') as LessonType
   const content = body?.content?.trim() || null
   const videoUrl = body?.videoUrl?.trim() || null
+  // Hanya relevan untuk QUIZ: true = Latihan (boleh diulang), false = Tes (sekali).
+  const allowRetake = body?.allowRetake !== false
 
   if (!title) {
     throw createError({ statusCode: 400, statusMessage: 'Judul wajib diisi.' })
@@ -45,7 +47,7 @@ export default defineEventHandler(async (event) => {
   const nextOrder = (lastLesson?.order ?? 0) + 1
 
   const lesson = await prisma.lesson.create({
-    data: { courseId, title, content, videoUrl, type, order: nextOrder },
+    data: { courseId, title, content, videoUrl, type, order: nextOrder, allowRetake },
   })
 
   return { lesson }

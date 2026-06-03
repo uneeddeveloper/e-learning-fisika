@@ -58,11 +58,83 @@
             </div>
           </div>
 
-          <!-- QUIZ (placeholder) -->
+          <!-- QUIZ -->
           <div v-else-if="lesson.type === 'QUIZ'">
-            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <p class="text-sm font-semibold text-zinc-200">Quiz</p>
-              <p class="mt-2 text-sm text-zinc-500">Fitur quiz interaktif belum tersedia.</p>
+            <div class="mb-4 flex items-center gap-2">
+              <span
+                class="rounded-full border px-2.5 py-0.5 text-[11px] font-semibold"
+                :class="lesson.allowRetake
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                  : 'border-amber-500/30 bg-amber-500/10 text-amber-300'"
+              >
+                {{ lesson.allowRetake ? 'Latihan · boleh diulang' : 'Tes · sekali kerjakan' }}
+              </span>
+            </div>
+
+            <p v-if="quizPending" class="text-sm text-zinc-500">Memuat soal...</p>
+
+            <div v-else-if="!quizzes.length" class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <p class="text-sm text-zinc-500">Belum ada soal pada latihan ini.</p>
+            </div>
+
+            <!-- Hasil setelah submit / sudah pernah dikerjakan -->
+            <div v-else-if="finished" class="space-y-4">
+              <div class="rounded-3xl border border-white/10 bg-white/5 p-6 text-center">
+                <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500">Nilai kamu</p>
+                <p class="mt-2 text-5xl font-extrabold tracking-tight" :class="scoreColor(resultScore)">
+                  {{ resultScore }}
+                </p>
+                <p class="mt-1 text-sm text-zinc-400">{{ resultCorrect }} benar dari {{ resultTotal }} soal</p>
+
+                <div class="mt-4 flex items-center justify-center gap-2">
+                  <Button v-if="lesson.allowRetake" size="md" @click="retry">
+                    <RotateCw class="h-4 w-4" />
+                    Kerjakan ulang
+                  </Button>
+                  <span v-else class="text-xs text-amber-300/90">Tes terkunci — tidak bisa diulang.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form pengerjaan -->
+            <div v-else class="space-y-5">
+              <div v-for="(q, i) in quizzes" :key="q.id" class="rounded-2xl border border-white/10 bg-white/5 p-5">
+                <p class="text-sm font-bold text-zinc-50">
+                  <span class="text-zinc-500">{{ i + 1 }}.</span> {{ q.question }}
+                </p>
+                <div class="mt-3 grid gap-2">
+                  <button
+                    v-for="opt in q.options"
+                    :key="opt.id"
+                    type="button"
+                    class="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-all"
+                    :class="answers[q.id] === opt.id
+                      ? 'border-accent-blue/60 bg-accent-blue/15 text-zinc-50'
+                      : 'border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10'"
+                    @click="answers[q.id] = opt.id"
+                  >
+                    <span
+                      class="grid h-5 w-5 shrink-0 place-items-center rounded-full border"
+                      :class="answers[q.id] === opt.id ? 'border-accent-blue bg-accent-blue/30' : 'border-white/20'"
+                    >
+                      <span v-if="answers[q.id] === opt.id" class="h-2 w-2 rounded-full bg-zinc-50" />
+                    </span>
+                    {{ opt.text }}
+                  </button>
+                </div>
+              </div>
+
+              <p v-if="submitError" class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-xs text-rose-300">
+                {{ submitError }}
+              </p>
+
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-xs text-zinc-500">{{ answeredCount }}/{{ quizzes.length }} terjawab</p>
+                <Button size="md" :disabled="submitting" @click="submitQuiz">
+                  <Send class="h-4 w-4" />
+                  {{ submitting ? 'Mengirim...' : 'Kumpulkan jawaban' }}
+                </Button>
+              </div>
             </div>
           </div>
         </GlassCard>
@@ -113,9 +185,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ArrowLeft } from 'lucide-vue-next'
+import { ArrowLeft, RotateCw, Send } from 'lucide-vue-next'
 
 import Button from '~/components/ui/button/Button.vue'
 import GlassCard from '~/components/ui/GlassCard.vue'
@@ -132,9 +204,15 @@ type LessonDetail = {
   content: string | null
   videoUrl: string | null
   order: number
+  allowRetake: boolean
   createdAt: string
   course: { id: number; title: string } | null
 }
+
+type QuizOption = { id: number; text: string }
+type QuizItem = { id: number; question: string; options: QuizOption[] }
+type MyResult = { submitted: boolean; score: number; correct: number; total: number } | null
+type QuizPayload = { quizzes: QuizItem[]; myResult: MyResult }
 
 const route = useRoute()
 
@@ -142,6 +220,78 @@ const { data: lesson, pending } = await useFetch<LessonDetail>(
   () => `/api/lessons/${route.params.id}`,
   { default: () => null as any },
 )
+
+// --- Quiz state ---
+const quizzes = ref<QuizItem[]>([])
+const answers = reactive<Record<number, number>>({})
+const quizPending = ref(false)
+const submitting = ref(false)
+const submitError = ref<string | null>(null)
+
+const finished = ref(false)
+const resultScore = ref(0)
+const resultCorrect = ref(0)
+const resultTotal = ref(0)
+
+const answeredCount = computed(() => Object.keys(answers).length)
+
+async function loadQuiz() {
+  if (!lesson.value || lesson.value.type !== 'QUIZ') return
+  quizPending.value = true
+  try {
+    const data = await $fetch<QuizPayload>(`/api/lessons/${lesson.value.id}/quizzes`)
+    quizzes.value = data.quizzes
+    if (data.myResult?.submitted) {
+      finished.value = true
+      resultScore.value = data.myResult.score
+      resultCorrect.value = data.myResult.correct
+      resultTotal.value = data.myResult.total
+    }
+  } finally {
+    quizPending.value = false
+  }
+}
+
+watch(lesson, () => loadQuiz(), { immediate: true })
+
+async function submitQuiz() {
+  submitError.value = null
+  if (answeredCount.value < quizzes.value.length) {
+    submitError.value = 'Jawab semua soal dulu sebelum mengumpulkan.'
+    return
+  }
+  submitting.value = true
+  try {
+    const payload = Object.entries(answers).map(([quizId, optionId]) => ({
+      quizId: Number(quizId),
+      optionId,
+    }))
+    const res = await $fetch<{ score: number; correct: number; total: number }>(
+      `/api/lessons/${lesson.value!.id}/submit`,
+      { method: 'POST', body: { answers: payload } },
+    )
+    resultScore.value = res.score
+    resultCorrect.value = res.correct
+    resultTotal.value = res.total
+    finished.value = true
+  } catch (err: any) {
+    submitError.value = err?.statusMessage ?? err?.data?.statusMessage ?? 'Gagal mengumpulkan jawaban.'
+  } finally {
+    submitting.value = false
+  }
+}
+
+function retry() {
+  for (const k of Object.keys(answers)) delete answers[Number(k)]
+  finished.value = false
+  submitError.value = null
+}
+
+function scoreColor(score: number) {
+  if (score >= 80) return 'text-emerald-300'
+  if (score >= 60) return 'text-amber-300'
+  return 'text-rose-300'
+}
 
 const youtubeEmbedId = computed(() => {
   const url = lesson.value?.videoUrl

@@ -24,7 +24,7 @@
               <NuxtLink
                 to="/teacher"
                 class="flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-semibold transition-colors"
-                :class="route.path.startsWith('/teacher') ? 'bg-white/6 text-zinc-50 border border-white/10' : 'text-zinc-300 hover:bg-white/5'"
+                :class="route.path === '/teacher' ? 'bg-white/6 text-zinc-50 border border-white/10' : 'text-zinc-300 hover:bg-white/5'"
               >
                 <LayoutDashboard class="h-4 w-4" />
                 Dashboard
@@ -36,6 +36,14 @@
               >
                 <LibraryBig class="h-4 w-4" />
                 Student Gallery
+              </NuxtLink>
+              <NuxtLink
+                to="/teacher/latihan"
+                class="flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-semibold transition-colors"
+                :class="route.path.startsWith('/teacher/latihan') ? 'bg-white/6 text-zinc-50 border border-white/10' : 'text-zinc-300 hover:bg-white/5'"
+              >
+                <ClipboardList class="h-4 w-4" />
+                Soal Latihan
               </NuxtLink>
               <NuxtLink
                 to="/lab"
@@ -81,7 +89,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { FlaskConical, GraduationCap, LayoutDashboard, LibraryBig, LogOut } from 'lucide-vue-next'
+import { ClipboardList, FlaskConical, GraduationCap, LayoutDashboard, LibraryBig, LogOut } from 'lucide-vue-next'
 
 const route = useRoute()
 const { user, clear } = useUserSession()

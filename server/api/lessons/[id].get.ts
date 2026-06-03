@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
       content: true,
       videoUrl: true,
       order: true,
+      allowRetake: true,
       createdAt: true,
       course: { select: { id: true, title: true } },
     },
