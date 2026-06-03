@@ -489,6 +489,55 @@ numbered("Isi pilihan jawaban (minimal 2, maksimal 6). Klik tombol bundar di sam
 numbered("Klik “Simpan soal”. Soal akan muncul pada daftar di sisi kiri.", "")
 numbered("Untuk menghapus soal, klik ikon tempat sampah pada kartu soal (nilai terkait juga ikut terhapus).", "")
 
+heading3("Impor Soal dari Word (.docx)")
+body(
+    "Selain mengisi satu per satu, guru dapat mengimpor banyak soal sekaligus dari file "
+    "Microsoft Word. Tulis soal di Word mengikuti format baku berikut:"
+)
+# Contoh format (kotak monospace)
+tbl = doc.add_table(rows=1, cols=1)
+tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+cell = tbl.cell(0, 0)
+set_cell_bg(cell, "0F172A")
+example_lines = [
+    "1. Apa satuan SI untuk gaya?",
+    "A. Joule",
+    "B. Newton",
+    "C. Watt",
+    "D. Pascal",
+    "Jawaban: B",
+]
+cp = cell.paragraphs[0]
+cp.paragraph_format.space_after = Pt(0)
+for i, line in enumerate(example_lines):
+    if i > 0:
+        cp.add_run().add_break()
+    run = cp.add_run(line)
+    run.font.name = "Consolas"
+    run.font.size = Pt(10)
+    run.font.color.rgb = RGBColor(0xE2, 0xE8, 0xF0)
+doc.add_paragraph()
+
+body("Aturan penulisan:")
+bullet("Nomor soal diawali “1.” atau “1)”.", "Nomor: ")
+bullet("Pilihan jawaban diawali huruf “A.” sampai “E.” (boleh juga memakai tanda kurung, mis. “A)”).", "Pilihan: ")
+bullet("Kunci jawaban ditulis pada baris tersendiri: “Jawaban: B”. Kata “Kunci”, “Kunci Jawaban”, atau “Answer” juga diterima.", "Kunci: ")
+bullet("Teks pertanyaan boleh ditulis lebih dari satu baris; baris akan disambung otomatis.", "Multi-baris: ")
+
+body("Langkah impor:")
+numbered("Buka latihan, lalu pada panel “Tambah Soal” klik tombol “Impor dari Word (.docx)”.", "")
+numbered("Pilih file .docx dari komputer Anda.", "")
+numbered("Periksa pratinjau: soal yang valid bertanda hijau, soal bermasalah bertanda merah beserta keterangan masalahnya.", "")
+numbered("Klik “Simpan … soal”. Hanya soal valid yang disimpan; soal bermasalah dilewati.", "")
+
+note_box(
+    "Keterbatasan:",
+    "File harus berformat .docx (bukan .doc lama). Rumus atau simbol fisika yang dibuat "
+    "sebagai gambar / Equation tidak ikut terbaca — tulis sebagai teks biasa (mis. m/s^2) "
+    "agar dapat diimpor.",
+    fill="FFF7E6", border="D97706",
+)
+
 heading3("Pengaturan: Aktif/Nonaktif & Deadline")
 bullet("Klik tombol status untuk mengaktifkan atau menonaktifkan latihan. Latihan nonaktif tidak dapat dikerjakan siswa.", "Aktif/Nonaktif: ")
 bullet("Tentukan tanggal & jam pada kolom deadline, lalu klik “Simpan deadline”. Gunakan “Hapus deadline” untuk meniadakan batas waktu.", "Deadline: ")
@@ -566,6 +615,12 @@ faqs = [
     ("Apakah nilai Tes bisa dikerjakan ulang?",
      "Tidak. Mode Tes hanya dapat dikerjakan satu kali dan nilainya terkunci. Gunakan mode Latihan "
      "bila ingin siswa dapat mengulang."),
+    ("Saat impor dari Word, sebagian soal tidak tersimpan / ditandai merah.",
+     "Soal tersebut belum sesuai format. Pastikan ada baris “Jawaban: …”, minimal 2 pilihan, dan "
+     "huruf kunci jawaban benar-benar ada di antara pilihan. Perbaiki di Word lalu unggah ulang."),
+    ("File Word saya tidak bisa diimpor.",
+     "Pastikan file berformat .docx (bukan .doc lama). Jika masih gagal, buka di Word lalu "
+     "“Save As” ke format .docx, dan hindari menaruh soal di dalam tabel atau sebagai gambar."),
 ]
 for q, a in faqs:
     heading3("T: " + q)
