@@ -183,6 +183,28 @@
               <p class="mt-1 text-sm font-bold text-zinc-50">{{ formatDate(lesson.createdAt) }}</p>
             </div>
 
+            <div
+              v-if="lesson.type === 'QUIZ'"
+              class="rounded-2xl border p-4"
+              :class="lesson.deadline && !lesson.canWork
+                ? 'border-rose-500/30 bg-rose-500/10'
+                : 'border-white/10 bg-white/5'"
+            >
+              <p class="flex items-center gap-1.5 text-xs font-semibold text-zinc-300">
+                <Clock class="h-3.5 w-3.5" />
+                Deadline
+              </p>
+              <p class="mt-1 text-sm font-bold text-zinc-50">
+                {{ lesson.deadline ? formatDateTime(lesson.deadline) : 'Tanpa batas waktu' }}
+              </p>
+              <p v-if="lesson.deadline && !lesson.canWork" class="mt-1 text-xs font-semibold text-rose-300">
+                Waktu pengerjaan sudah habis
+              </p>
+              <p v-else-if="lesson.deadline" class="mt-1 text-xs text-emerald-300">
+                Masih bisa dikerjakan
+              </p>
+            </div>
+
             <div v-if="lesson.course" class="rounded-2xl border border-white/10 bg-white/5 p-4">
               <p class="text-xs font-semibold text-zinc-300">Course</p>
               <p class="mt-1 text-sm font-bold text-zinc-50">{{ lesson.course.title }}</p>
