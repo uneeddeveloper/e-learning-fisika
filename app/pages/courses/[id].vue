@@ -123,28 +123,48 @@
               </p>
             </div>
 
-            <!-- Form pengerjaan -->
+            <!-- Form pengerjaan: satu soal per layar -->
             <div v-else class="space-y-5">
-              <div v-for="(q, i) in quizzes" :key="q.id" class="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <p class="text-sm font-bold text-zinc-50">
-                  <span class="text-zinc-500">{{ i + 1 }}.</span> {{ q.question }}
+              <!-- Navigator nomor soal -->
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  v-for="(q, i) in quizzes"
+                  :key="q.id"
+                  type="button"
+                  class="grid h-9 w-9 place-items-center rounded-xl border text-sm font-bold transition-all"
+                  :class="navClass(q, i)"
+                  :title="`Soal ${i + 1}${answers[q.id] !== undefined ? ' (sudah dijawab)' : ''}`"
+                  @click="currentIndex = i"
+                >
+                  {{ i + 1 }}
+                </button>
+                <span class="ml-auto text-xs font-semibold text-zinc-400">
+                  {{ answeredCount }}/{{ quizzes.length }} terjawab
+                </span>
+              </div>
+
+              <!-- Soal aktif -->
+              <div v-if="currentQuestion" class="rounded-2xl border border-white/10 bg-white/5 p-5">
+                <p class="text-xs font-semibold tracking-wide text-zinc-500">
+                  Soal {{ currentIndex + 1 }} dari {{ quizzes.length }}
                 </p>
-                <div class="mt-3 grid gap-2">
+                <p class="mt-1 text-sm font-bold text-zinc-50">{{ currentQuestion.question }}</p>
+                <div class="mt-4 grid gap-2">
                   <button
-                    v-for="opt in q.options"
+                    v-for="opt in currentQuestion.options"
                     :key="opt.id"
                     type="button"
                     class="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm transition-all"
-                    :class="answers[q.id] === opt.id
+                    :class="answers[currentQuestion.id] === opt.id
                       ? 'border-accent-blue/60 bg-accent-blue/15 text-zinc-50'
                       : 'border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10'"
-                    @click="answers[q.id] = opt.id"
+                    @click="answers[currentQuestion.id] = opt.id"
                   >
                     <span
                       class="grid h-5 w-5 shrink-0 place-items-center rounded-full border"
-                      :class="answers[q.id] === opt.id ? 'border-accent-blue bg-accent-blue/30' : 'border-white/20'"
+                      :class="answers[currentQuestion.id] === opt.id ? 'border-accent-blue bg-accent-blue/30' : 'border-white/20'"
                     >
-                      <span v-if="answers[q.id] === opt.id" class="h-2 w-2 rounded-full bg-zinc-50" />
+                      <span v-if="answers[currentQuestion.id] === opt.id" class="h-2 w-2 rounded-full bg-zinc-50" />
                     </span>
                     {{ opt.text }}
                   </button>
@@ -155,9 +175,32 @@
                 {{ submitError }}
               </p>
 
+              <!-- Navigasi & submit -->
               <div class="flex items-center justify-between gap-3">
-                <p class="text-xs text-zinc-500">{{ answeredCount }}/{{ quizzes.length }} terjawab</p>
-                <Button size="md" :disabled="submitting" @click="submitQuiz">
+                <Button
+                  variant="secondary"
+                  size="md"
+                  :disabled="currentIndex === 0"
+                  @click="currentIndex = Math.max(0, currentIndex - 1)"
+                >
+                  <ChevronLeft class="h-4 w-4" />
+                  Sebelumnya
+                </Button>
+
+                <Button
+                  v-if="currentIndex < quizzes.length - 1"
+                  size="md"
+                  @click="currentIndex = Math.min(quizzes.length - 1, currentIndex + 1)"
+                >
+                  Berikutnya
+                  <ChevronRight class="h-4 w-4" />
+                </Button>
+                <Button
+                  v-else
+                  size="md"
+                  :disabled="submitting"
+                  @click="submitQuiz"
+                >
                   <Send class="h-4 w-4" />
                   {{ submitting ? 'Mengirim...' : 'Kumpulkan jawaban' }}
                 </Button>
@@ -236,7 +279,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ArrowLeft, Clock, RotateCw, Send } from 'lucide-vue-next'
+import { ArrowLeft, ChevronLeft, ChevronRight, Clock, RotateCw, Send } from 'lucide-vue-next'
 
 import Button from '~/components/ui/button/Button.vue'
 import GlassCard from '~/components/ui/GlassCard.vue'
@@ -288,6 +331,19 @@ const resultTotal = ref(0)
 
 const answeredCount = computed(() => Object.keys(answers).length)
 
+// Navigasi satu soal per layar.
+const currentIndex = ref(0)
+const currentQuestion = computed(() => quizzes.value[currentIndex.value] ?? null)
+
+function navClass(q: QuizItem, i: number) {
+  const answered = answers[q.id] !== undefined
+  const current = i === currentIndex.value
+  const cls = answered
+    ? 'border-emerald-500/50 bg-emerald-500/20 text-emerald-200'
+    : 'border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10'
+  return current ? `${cls} ring-2 ring-accent-blue ring-offset-2 ring-offset-background` : cls
+}
+
 async function loadQuiz() {
   if (!lesson.value || lesson.value.type !== 'QUIZ') return
   // Quiz nonaktif/kedaluwarsa tidak punya soal yang bisa dimuat (server menolak).
@@ -296,6 +352,7 @@ async function loadQuiz() {
   try {
     const data = await $fetch<QuizPayload>(`/api/lessons/${lesson.value.id}/quizzes`)
     quizzes.value = data.quizzes
+    currentIndex.value = 0
     if (data.myResult?.submitted) {
       finished.value = true
       resultScore.value = data.myResult.score
@@ -340,6 +397,7 @@ function retry() {
   for (const k of Object.keys(answers)) delete answers[Number(k)]
   finished.value = false
   submitError.value = null
+  currentIndex.value = 0
 }
 
 function scoreColor(score: number) {
